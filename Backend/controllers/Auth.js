@@ -88,13 +88,11 @@ const OTPVerification = async(req, res)=>{
   try {
 
     // Find OTP in database
-    const storedOTP = await OTP.findOne({ email })
-        .sort({ createdAt: -1 })
-        .limit(1);
+    const storedOTP = await OTP.findOne({ email }).sort({ createdAt: -1 });
 
-    if (!storedOTP && otp !== storedOTP) {
+    if (!storedOTP || otp !== storedOTP.otp) {
       return res.status(400).json({
-        success:false,
+        success: false,
         message: 'Invalid OTP' 
       });
     }
