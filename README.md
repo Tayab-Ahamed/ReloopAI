@@ -92,7 +92,7 @@ flowchart LR
 
     DB[(MongoDB<br/>Atlas)]
     S3[(S3 / R2<br/>Images)]
-    N8Nn8n Cloud<br/>3 workflows
+    N8N["n8n Cloud<br/>3 workflows"]
 
     OPENAI([OpenAI])
     GVISION([Google Vision])
@@ -177,7 +177,7 @@ flowchart TD
     W1[Webhook: listing-created] --> A1[AI analyze photo]
     A1 --> S1[Save to database]
     S1 --> M1[AI match recipients]
-    M1 --> N1Notify top NGO<br/>email + WhatsApp
+    M1 --> N1["Notify top NGO<br/>email + WhatsApp"]
     N1 --> WAIT1[Wait 15 min for approval]
     WAIT1 --> ACC{Accepted?}
     ACC -- yes --> V1[Assign volunteer]
@@ -194,7 +194,7 @@ flowchart TD
 flowchart TD
     CRON[Cron: every 10 min] --> FIND[Find food listings expiring in <6h]
     FIND --> PRI[Set priority = HIGH]
-    PRI --> NN1Notify all nearby NGOs<br/>simultaneously
+    PRI --> NN1["Notify all nearby NGOs<br/>simultaneously"]
     NN1 --> WAIT2[Wait 20 min]
     WAIT2 --> Q{Any acceptance?}
     Q -- no --> ESC[Escalate priority = CRITICAL]
