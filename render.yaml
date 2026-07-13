@@ -1,0 +1,47 @@
+# Render blueprint — https://render.com/docs/blueprint-spec
+# Push this repo and click "New Blueprint" in the Render dashboard.
+services:
+  - type: web
+    name: reloop-ai-api
+    runtime: node
+    plan: free
+    rootDir: Backend
+    buildCommand: npm install
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: PORT
+        value: "5000"
+      - key: CORS_ORIGINS
+        sync: false
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+      - key: AI_PROVIDER
+        value: mock
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OCR_PROVIDER
+        value: mock
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_WHATSAPP_FROM
+        sync: false
+      - key: N8N_WEBHOOK_BASE
+        sync: false
+      - key: N8N_SECRET
+        generateValue: true
+      - key: PUBLIC_APP_URL
+        sync: false

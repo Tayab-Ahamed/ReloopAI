@@ -1,0 +1,82 @@
+{
+  "name": "ReLoop AI — WF-02 Expiry Escalation",
+  "nodes": [
+    {
+      "parameters": { "cronExpression": "*/10 * * * *" },
+      "name": "Cron: every 10 min",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "url": "=$env.RELOOP_API/api/donations/expiring?withinHours=6",
+        "method": "GET"
+      },
+      "name": "Find Expiring Food",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "url": "=$env.RELOOP_API/api/webhooks/expiry-escalation",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParametersJson": "={ \"listingId\": $json.listingId }"
+      },
+      "name": "Mark Priority HIGH",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "url": "=$env.RELOOP_API/api/notify/fanout",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParametersJson": "={ \"listingId\": $json.listingId, \"audience\": \"nearby-ngos\", \"radiusKm\": 10 }"
+      },
+      "name": "Notify Nearby NGOs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [860, 300]
+    },
+    {
+      "parameters": { "amount": 20, "unit": "minutes" },
+      "name": "Wait: 20 min",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1080, 300]
+    },
+    {
+      "parameters": {
+        "conditions": { "boolean": [{ "value1": "=$json.accepted", "value2": true }] }
+      },
+      "name": "Accepted?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1300, 300]
+    },
+    {
+      "parameters": {
+        "url": "=$env.RELOOP_API/api/notify/fanout",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParametersJson": "={ \"listingId\": $json.listingId, \"audience\": \"volunteers\" }"
+      },
+      "name": "Notify Volunteers",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1520, 400]
+    }
+  ],
+  "connections": {
+    "Cron: every 10 min":  { "main": [[{ "node": "Find Expiring Food", "type": "main", "index": 0 }]] },
+    "Find Expiring Food":  { "main": [[{ "node": "Mark Priority HIGH", "type": "main", "index": 0 }]] },
+    "Mark Priority HIGH":  { "main": [[{ "node": "Notify Nearby NGOs", "type": "main", "index": 0 }]] },
+    "Notify Nearby NGOs":  { "main": [[{ "node": "Wait: 20 min", "type": "main", "index": 0 }]] },
+    "Wait: 20 min":        { "main": [[{ "node": "Accepted?", "type": "main", "index": 0 }]] },
+    "Accepted?":           { "main": [[], [{ "node": "Notify Volunteers", "type": "main", "index": 0 }]] }
+  }
+}

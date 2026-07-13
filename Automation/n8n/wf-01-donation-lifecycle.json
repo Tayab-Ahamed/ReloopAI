@@ -1,0 +1,130 @@
+{
+  "name": "ReLoop AI — WF-01 Donation Lifecycle",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wf-01-donation-lifecycle",
+        "responseMode": "onReceived"
+      },
+      "name": "Trigger: Listing Created",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "url": "=$env.RELOOP_API/api/ai/analyze",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParametersJson": "={ \"imageUrl\": $json.imageUrl, \"hints\": $json.hints }"
+      },
+      "name": "AI Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "url": "=$env.RELOOP_API/api/donations/$json.listingId",
+        "method": "PATCH",
+        "sendBody": true,
+        "bodyParametersJson": "={ \"ai\": $json, \"status\": \"ai_ready\" }"
+      },
+      "name": "Save AI Result",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "url": "=$env.RELOOP_API/api/ai/match",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParametersJson": "={ \"listingId\": $json.listingId }"
+      },
+      "name": "AI Match Recipients",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "url": "=$env.RELOOP_API/api/notify",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParametersJson": "={ \"listingId\": $json.listingId, \"topN\": 1 }"
+      },
+      "name": "Notify Top NGO",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1080, 300]
+    },
+    {
+      "parameters": { "amount": 15, "unit": "minutes" },
+      "name": "Wait for Approval",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1300, 300]
+    },
+    {
+      "parameters": {
+        "url": "=$env.RELOOP_API/api/volunteer/assign",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParametersJson": "={ \"listingId\": $json.listingId }"
+      },
+      "name": "Assign Volunteer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1520, 300]
+    },
+    {
+      "parameters": {
+        "url": "=$env.RELOOP_API/api/routing/google-maps",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParametersJson": "={ \"listingId\": $json.listingId }"
+      },
+      "name": "Generate Google Maps Route",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1740, 300]
+    },
+    {
+      "parameters": {
+        "url": "=$env.RELOOP_API/api/notify/reminder",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParametersJson": "={ \"listingId\": $json.listingId }"
+      },
+      "name": "Send Reminder",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1960, 300]
+    },
+    {
+      "parameters": {
+        "url": "=$env.RELOOP_API/api/webhooks/pickup-completed",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParametersJson": "={ \"listingId\": $json.listingId }"
+      },
+      "name": "Mark Pickup Complete",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2180, 300]
+    }
+  ],
+  "connections": {
+    "Trigger: Listing Created":     { "main": [[{ "node": "AI Analysis", "type": "main", "index": 0 }]] },
+    "AI Analysis":                  { "main": [[{ "node": "Save AI Result", "type": "main", "index": 0 }]] },
+    "Save AI Result":               { "main": [[{ "node": "AI Match Recipients", "type": "main", "index": 0 }]] },
+    "AI Match Recipients":          { "main": [[{ "node": "Notify Top NGO", "type": "main", "index": 0 }]] },
+    "Notify Top NGO":               { "main": [[{ "node": "Wait for Approval", "type": "main", "index": 0 }]] },
+    "Wait for Approval":            { "main": [[{ "node": "Assign Volunteer", "type": "main", "index": 0 }]] },
+    "Assign Volunteer":             { "main": [[{ "node": "Generate Google Maps Route", "type": "main", "index": 0 }]] },
+    "Generate Google Maps Route":   { "main": [[{ "node": "Send Reminder", "type": "main", "index": 0 }]] },
+    "Send Reminder":                { "main": [[{ "node": "Mark Pickup Complete", "type": "main", "index": 0 }]] }
+  }
+}

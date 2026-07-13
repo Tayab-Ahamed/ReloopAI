@@ -1,0 +1,70 @@
+{
+  "name": "ReLoop AI — WF-03 Impact & Receipt",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wf-03-impact-receipt",
+        "responseMode": "onReceived"
+      },
+      "name": "Trigger: Pickup Completed",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "url": "=$env.RELOOP_API/api/ai/impact",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParametersJson": "={ \"listingId\": $json.listingId }"
+      },
+      "name": "Generate Impact Report (LLM)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "url": "=$env.RELOOP_API/api/certificates/render",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParametersJson": "={ \"listingId\": $json.listingId }"
+      },
+      "name": "Render PDF Certificate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "url": "=$env.RELOOP_API/api/notify/impact",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParametersJson": "={ \"listingId\": $json.listingId, \"channels\": [\"email\", \"whatsapp\"] }"
+      },
+      "name": "Email + WhatsApp Donor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "url": "=$env.RELOOP_API/api/analytics/rollup",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParametersJson": "={ \"listingId\": $json.listingId }"
+      },
+      "name": "Update CO2 Savings",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1080, 300]
+    }
+  ],
+  "connections": {
+    "Trigger: Pickup Completed":       { "main": [[{ "node": "Generate Impact Report (LLM)", "type": "main", "index": 0 }]] },
+    "Generate Impact Report (LLM)":    { "main": [[{ "node": "Render PDF Certificate", "type": "main", "index": 0 }]] },
+    "Render PDF Certificate":          { "main": [[{ "node": "Email + WhatsApp Donor", "type": "main", "index": 0 }]] },
+    "Email + WhatsApp Donor":          { "main": [[{ "node": "Update CO2 Savings", "type": "main", "index": 0 }]] }
+  }
+}

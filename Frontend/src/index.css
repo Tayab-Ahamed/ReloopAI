@@ -1,0 +1,141 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light mode kept for shadcn compatibility, but app defaults to dark */
+    --background: 240 20% 98%;
+    --foreground: 240 20% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 20% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 20% 8%;
+    --primary: 252 100% 68%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 10% 96%;
+    --secondary-foreground: 240 20% 12%;
+    --muted: 240 10% 96%;
+    --muted-foreground: 240 10% 40%;
+    --accent: 168 71% 48%;
+    --accent-foreground: 240 30% 8%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 10% 92%;
+    --input: 240 10% 92%;
+    --ring: 252 100% 68%;
+    --radius: 0.75rem;
+    --chart-1: 252 100% 68%;
+    --chart-2: 168 71% 48%;
+    --chart-3: 220 100% 66%;
+    --chart-4: 290 80% 65%;
+    --chart-5: 42 96% 62%;
+    --sidebar-background: 240 20% 6%;
+    --sidebar-foreground: 240 10% 85%;
+    --sidebar-primary: 252 100% 68%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 20% 12%;
+    --sidebar-accent-foreground: 240 10% 90%;
+    --sidebar-border: 240 20% 14%;
+    --sidebar-ring: 252 100% 68%;
+  }
+
+  .dark {
+    --background: 240 30% 5%;
+    --foreground: 240 15% 96%;
+    --card: 240 25% 8%;
+    --card-foreground: 240 15% 96%;
+    --popover: 240 25% 8%;
+    --popover-foreground: 240 15% 96%;
+    --primary: 252 100% 72%;
+    --primary-foreground: 240 30% 6%;
+    --secondary: 240 20% 12%;
+    --secondary-foreground: 240 15% 92%;
+    --muted: 240 20% 12%;
+    --muted-foreground: 240 10% 65%;
+    --accent: 168 76% 55%;
+    --accent-foreground: 240 30% 6%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 20% 16%;
+    --input: 240 20% 14%;
+    --ring: 252 100% 72%;
+    --chart-1: 252 100% 72%;
+    --chart-2: 168 76% 55%;
+    --chart-3: 220 100% 70%;
+    --chart-4: 290 85% 72%;
+    --chart-5: 42 96% 66%;
+    --sidebar-background: 240 30% 5%;
+    --sidebar-foreground: 240 10% 85%;
+    --sidebar-primary: 252 100% 72%;
+    --sidebar-primary-foreground: 240 30% 6%;
+    --sidebar-accent: 240 25% 10%;
+    --sidebar-accent-foreground: 240 10% 90%;
+    --sidebar-border: 240 20% 14%;
+    --sidebar-ring: 252 100% 72%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  html, body { @apply antialiased; }
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  h1,h2,h3,h4 { @apply font-display tracking-tight; }
+}
+
+@layer components {
+  .container-page { @apply container mx-auto px-6 lg:px-8; }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white
+           bg-brand-gradient shadow-glow transition-transform duration-200 hover:-translate-y-0.5 active:translate-y-0;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold
+           border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] text-foreground transition;
+  }
+
+  .card-glass {
+    @apply rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl shadow-card;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04]
+           px-3 py-1 text-xs font-medium text-foreground/80;
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, #C7B9FF 0%, #8FB3FF 45%, #7EF0D6 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .divider {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent;
+  }
+
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 40%, transparent 80%);
+  }
+
+  .glow-orb {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(80px);
+    opacity: 0.55;
+    pointer-events: none;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
