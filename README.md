@@ -52,7 +52,7 @@
 | 🎯 **Weighted AI matching** | Recipients scored on distance (30%) · urgency (25%) · category fit (20%) · storage (15%) · availability (10%). |
 | 🔄 **3 n8n workflows** | Donation lifecycle · Expiry escalation · Impact & receipt — all import-ready JSON. |
 | 📊 **Live impact dashboard** | Waste diverted · meals donated · CO₂ saved · pickups · NGOs · volunteers · AI recommendations. |
-| 🎭 **Provider-agnostic AI** | Toggle `AI_PROVIDER` between `openai`, `huggingface`, or `mock` — boots without a single key. |
+| 🎭 **Provider-agnostic AI** | Toggle `AI_PROVIDER` between `groq`, `openai`, `huggingface`, or `mock` — boots without a single key. |
 | 🌍 **7 resource streams** | Food, Electronics, Furniture, Books, Clothes, Medical, Recyclables — SDG 12 aligned. |
 | 👥 **5 roles** | Donor · NGO · Volunteer · Recycler · Admin, each with a tailored dashboard. |
 | 📨 **Multi-channel notify** | SendGrid email + Twilio WhatsApp + in-app, fanning out per user preference. |
@@ -256,7 +256,7 @@ graph LR
 |---|---|
 | Frontend | React 18 · TypeScript 5.6 · Vite 6 · Tailwind 3 · shadcn/ui · Framer Motion 12 · **Three.js r169 + @react-three/fiber + @react-three/drei** · Recharts · React Router 7 |
 | Backend | Node 20 · Express 4 · Mongoose 8 · Axios · JWT · bcrypt · SendGrid · AWS S3 SDK |
-| AI | OpenAI (GPT-4o Vision + text) · Google Cloud Vision · Hugging Face ViT · provider-agnostic with mock fallback |
+| AI | Groq (Llama 3.2 Vision + Llama 3.3 Text) · OpenAI (GPT-4o Vision + text) · Google Cloud Vision · Hugging Face ViT · provider-agnostic with mock fallback |
 | Automation | n8n — 3 importable workflows |
 | Data | MongoDB Atlas · S3-compatible object storage (R2 / S3 / MinIO) |
 | Notifications | SendGrid · Twilio WhatsApp |
@@ -276,7 +276,7 @@ cd Backend && npm run dev             # http://localhost:5000
 cd Frontend && npm run dev            # http://localhost:5173
 ```
 
-That's it. The app is fully browsable in demo mode. Set `AI_PROVIDER=openai` + `OPENAI_API_KEY` in `Backend/.env` to switch to real inference.
+That's it. The app is fully browsable in demo mode. Set `AI_PROVIDER=groq` + `GROQ_API_KEY` in `Backend/.env` to switch to real inference.
 
 ##  Deploy
 
@@ -337,7 +337,7 @@ S3_PUBLIC_BASE=
 # Maps (server-side only — never expose to browser)
 GOOGLE_MAPS_API_KEY=
 
-# AI providers  (mock | openai | huggingface)
+# AI providers  (mock | groq | openai | huggingface)
 AI_PROVIDER=mock
 OPENAI_API_KEY=
 OPENAI_VISION_MODEL=gpt-4o-mini
@@ -345,7 +345,12 @@ OPENAI_TEXT_MODEL=gpt-4o-mini
 HF_TOKEN=
 HF_VISION_MODEL=google/vit-base-patch16-224
 
-# OCR (mock | openai | google)
+# Groq API Configuration
+GROQ_API_KEY=
+GROQ_VISION_MODEL=llama-3.2-11b-vision-preview
+GROQ_TEXT_MODEL=llama-3.3-70b-versatile
+
+# OCR (mock | groq | openai | google)
 OCR_PROVIDER=mock
 GOOGLE_VISION_KEY=
 
