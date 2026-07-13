@@ -4,6 +4,7 @@ const sgMail = require('@sendgrid/mail');
 const sendEmail = async (to, subject, text, html) => {
   if (!process.env.SENDGRID_API_KEY) {
     console.warn('[reloop] SENDGRID_API_KEY not set — skipping email to', to);
+    console.warn(`[reloop] [MOCK EMAIL] To: ${to} | Subject: ${subject} | Body: ${text}`);
     return { skipped: true };
   }
   if (!process.env.SENDGRID_EMAIL && !process.env.EMAIL_FROM) {
