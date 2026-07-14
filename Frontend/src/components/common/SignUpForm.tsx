@@ -197,7 +197,7 @@ export default function SignUpForm({
 
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_Backend_URL}/api/auth/verify-otp`,
+        `${import.meta.env.VITE_Backend_URL}/api/auth/verify-email`,
         { userData, otp: enteredOtp },
         { withCredentials: true }
       );

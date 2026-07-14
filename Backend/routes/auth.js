@@ -19,7 +19,7 @@ router.post(
 // @route   POST /api/auth/verify-email
 // @desc    Verify email using OTP
 // @access  Public
-router.post('/verify-otp', OTPVerification);
+router.post('/verify-email', OTPVerification);
 
 
 
