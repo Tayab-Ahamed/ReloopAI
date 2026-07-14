@@ -214,9 +214,10 @@ export default function SignUpForm({
           variant: 'error',
         });
       }
-    } catch (error) {
-      console.error("OTP verification error:", (error as Error).message);
-      enqueueSnackbar("Failed to verify OTP. Please try again or request a new OTP.", { 
+    } catch (error: any) {
+      console.error("OTP verification error:", error.message);
+      const serverMessage = error.response?.data?.message || "Failed to verify OTP. Please try again or request a new OTP.";
+      enqueueSnackbar(serverMessage, { 
         variant: 'error',
       });
     }
