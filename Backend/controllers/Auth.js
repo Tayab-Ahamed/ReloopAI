@@ -87,10 +87,12 @@ const OTPVerification = async(req, res)=>{
   const {otp} = req.body;
   try {
 
-    // Find OTP in database
-    const storedOTP = await OTP.findOne({ email }).sort({ createdAt: -1 });
+    // Find OTP in database using find().sort().limit(1) for guaranteed sorting order
+    const otpDocs = await OTP.find({ email }).sort({ createdAt: -1 }).limit(1);
+    const storedOTP = otpDocs[0];
 
     if (!storedOTP || otp.trim() !== storedOTP.otp.trim()) {
+      console.warn(`[reloop] OTP verification failed. Stored: ${storedOTP ? storedOTP.otp : 'NONE'}, Entered: ${otp}`);
       return res.status(400).json({
         success: false,
         message: 'Invalid OTP' 
@@ -141,7 +143,7 @@ const OTPVerification = async(req, res)=>{
 
   } 
   catch (err) {
-    console.error(err.message);
+    console.error("[reloop] OTP verification uncaught server error:", err);
     res.status(500).json({
       success:false,
       message:err.message,
