@@ -329,4 +329,57 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = {sendOTPUsingEmail, OTPVerification, AuthenticateUser, ForgotPasswordOTP, ForgotPassword, resetPassword}
+const GoogleLogin = async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ msg: 'Email is required for Google login' });
+  }
+  try {
+    let user = await User.findOne({ email });
+    if (!user) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash("google-oauth-dummy-pass", salt);
+      user = new User({
+        name: "Google User",
+        email: email,
+        password: hashedPassword,
+        role: "Donar",
+      });
+      await user.save();
+    }
+
+    const payload = {
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+    };
+
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '12h' });
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      sameSite: "Strict",
+      maxAge: 12 * 60 * 60 * 1000,
+    })
+    .status(200)
+    .json({
+      success: true,
+      message: "Google OAuth Login successful!",
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        profileImage: user.profileImage,
+      }
+    });
+  } catch (err) {
+    console.error("Google Login Error:", err.message);
+    res.status(500).send('Server error');
+  }
+};
+
+module.exports = {sendOTPUsingEmail, OTPVerification, AuthenticateUser, ForgotPasswordOTP, ForgotPassword, resetPassword, GoogleLogin}

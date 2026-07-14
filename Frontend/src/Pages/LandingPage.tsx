@@ -19,6 +19,28 @@ const LandingPage = () => {
     if (user) navigate(`/user/${user.role}`);
   }, [user]);
 
+  useEffect(() => {
+    const handleHashScroll = () => {
+      const hash = window.location.hash;
+      if (hash) {
+        const id = hash.replace('#', '');
+        const element = document.getElementById(id);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    };
+
+    // Scroll on mount after a small delay to allow components to render
+    const timer = setTimeout(handleHashScroll, 100);
+
+    window.addEventListener('hashchange', handleHashScroll);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('hashchange', handleHashScroll);
+    };
+  }, []);
+
   return (
     <div className="relative z-0">
       <ScrollProgress />

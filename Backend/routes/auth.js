@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const {sendOTPUsingEmail, OTPVerification, AuthenticateUser, ForgotPasswordOTP, ForgotPassword, resetPassword} = require('../controllers/Auth');
+const {sendOTPUsingEmail, OTPVerification, AuthenticateUser, ForgotPasswordOTP, ForgotPassword, resetPassword, GoogleLogin} = require('../controllers/Auth');
 
 
 
@@ -29,6 +29,14 @@ router.post('/verify-email', OTPVerification);
 router.post(
   '/login',
   AuthenticateUser
+);
+
+// @route   POST /api/auth/google-login
+// @desc    Google mock authentication
+// @access  Public
+router.post(
+  '/google-login',
+  GoogleLogin
 );
 
 

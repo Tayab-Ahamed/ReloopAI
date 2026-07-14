@@ -62,9 +62,10 @@ export default function LoginForm({
   const handleGoogleLogin = async () => {
     enqueueSnackbar("Initiating Google Sign-In...", { variant: "info" });
     try {
+      const targetEmail = email.trim() || "wix6buyg5g@bwmyga.com";
       const res = await axios.post(
-        import.meta.env.VITE_Backend_URL + "/api/auth/login",
-        { email: "wix6buyg5g@bwmyga.com", password: "password123" },
+        import.meta.env.VITE_Backend_URL + "/api/auth/google-login",
+        { email: targetEmail },
         { withCredentials: true }
       );
       if (res.data.success) {
@@ -74,14 +75,11 @@ export default function LoginForm({
         }
         await fetchUserData();
       } else {
-        setEmail("wix6buyg5g@bwmyga.com");
-        setPassword("123456");
-        enqueueSnackbar("Google login redirected. Please click standard Login.", { variant: 'info' });
+        enqueueSnackbar("Google login failed.", { variant: 'error' });
       }
     } catch (err) {
-      setEmail("wix6buyg5g@bwmyga.com");
-      setPassword("123456");
-      enqueueSnackbar("Google login redirected. Please click standard Login.", { variant: 'info' });
+      console.error("Google login error:", err);
+      enqueueSnackbar("Google Sign-In failed.", { variant: 'error' });
     }
   };
 
