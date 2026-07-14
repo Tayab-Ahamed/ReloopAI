@@ -15,7 +15,7 @@ const ALLOWED = (process.env.CORS_ORIGINS || 'http://localhost:5173')
 const corsOptions = {
   origin: (origin, cb) => {
     if (!origin) return cb(null, true);
-    if (ALLOWED.includes(origin)) return cb(null, true);
+    if (ALLOWED.includes('*') || ALLOWED.includes(origin)) return cb(null, origin);
     return cb(null, ALLOWED[0] || false);
   },
   credentials: true,
