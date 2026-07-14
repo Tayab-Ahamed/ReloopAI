@@ -29,7 +29,7 @@ const slideTransition = { duration: 0.55, ease: [0.22, 1, 0.36, 1] as [number, n
 const NewDonations: React.FC = () => {
   const navigate = useNavigate();
   const [i, setI] = useState(0);
-  const handleStart = () => navigate("/user/Donor/donationForm");
+  const handleStart = (category?: string) => navigate("/user/Donor/donationForm", { state: { category } });
 
   useEffect(() => {
     const t = setInterval(() => setI((v) => (v + 1) % slides.length), 4500);
@@ -61,7 +61,7 @@ const NewDonations: React.FC = () => {
           <h2 className="mt-3 font-display text-2xl md:text-3xl font-semibold">{s.label}</h2>
           <p className="mt-2 text-white/85 max-w-xl">{s.description}</p>
           <button
-            onClick={handleStart}
+            onClick={() => handleStart()}
             className="mt-6 inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 shadow-glow hover:brightness-110"
           >
             <Cpu className="h-4 w-4" /> Start with AI <ArrowRight className="h-4 w-4" />
@@ -76,7 +76,7 @@ const NewDonations: React.FC = () => {
           {CATEGORIES.map((c) => (
             <button
               key={c.id}
-              onClick={handleStart}
+              onClick={() => handleStart(c.id)}
               className="card-glass p-4 text-left hover:border-brand-500/40 transition"
             >
               <div className="text-2xl">{c.emoji}</div>

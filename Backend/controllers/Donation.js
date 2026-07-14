@@ -267,7 +267,8 @@ const createDonation = async (req, res) => {
       pickupLocation: req.body.pickupLocation,
       name:req.body.name,
       description: req.body.description, // New field
-      imageUrl: req.body.imageUrl
+      imageUrl: req.body.imageUrl,
+      category: req.body.category || 'food'
     });
     
     // Save the donation
