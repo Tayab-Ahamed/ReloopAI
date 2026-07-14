@@ -33,7 +33,7 @@ const uploadImageToR2 = async (base64Image, folder) => {
         medical: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&q=80&w=800',
         recyclables: 'https://images.unsplash.com/photo-1532996122724-e3463d24a215?auto=format&fit=crop&q=80&w=800',
       };
-      return mockImages[folder as keyof typeof mockImages] || mockImages.donations;
+      return mockImages[folder] || mockImages.donations;
     }
 
     const buffer = Buffer.from(base64Image.replace(/^data:image\/\w+;base64,/, ''), 'base64');
