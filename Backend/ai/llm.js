@@ -130,4 +130,60 @@ function normaliseImpact(p, listing) {
 
 function safeJson(s) { try { return JSON.parse(s); } catch { return {}; } }
 
-module.exports = { generateListing, generateImpactReport };
+async function askReLoop({ message }) {
+  const provider = (process.env.AI_PROVIDER || 'mock').toLowerCase();
+  if (provider === 'groq' && process.env.GROQ_API_KEY) return chatGroq({ message });
+  if (provider === 'openai' && process.env.OPENAI_API_KEY) return chatOpenAI({ message });
+  return chatMock({ message });
+}
+
+async function chatGroq({ message }) {
+  try {
+    const model = process.env.GROQ_TEXT_MODEL || 'llama-3.3-70b-versatile';
+    const sys = 'You are ReLoop AI Assistant, a smart circular economy helper. Guide users on listing donations, how AI auto-categorization works, and how NGOs/volunteers get matched. Keep your replies friendly and concise.';
+    const { data } = await axios.post(
+      'https://api.groq.com/openai/v1/chat/completions',
+      {
+        model,
+        messages: [{ role: 'system', content: sys }, { role: 'user', content: message }]
+      },
+      { headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}` } }
+    );
+    return data?.choices?.[0]?.message?.content || 'I apologize, I could not generate a response.';
+  } catch (error) {
+    console.error('Groq chat error:', error);
+    return chatMock({ message });
+  }
+}
+
+async function chatOpenAI({ message }) {
+  try {
+    const model = process.env.OPENAI_TEXT_MODEL || 'gpt-4o-mini';
+    const sys = 'You are ReLoop AI Assistant, a smart circular economy helper. Guide users on listing donations, how AI auto-categorization works, and how NGOs/volunteers get matched. Keep your replies friendly and concise.';
+    const { data } = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      { model, messages: [{ role: 'system', content: sys }, { role: 'user', content: message }] },
+      { headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` } }
+    );
+    return data?.choices?.[0]?.message?.content || 'I apologize, I could not generate a response.';
+  } catch (error) {
+    console.error('OpenAI chat error:', error);
+    return chatMock({ message });
+  }
+}
+
+function chatMock({ message }) {
+  const m = message.toLowerCase();
+  if (m.includes('food')) {
+    return "ReLoop AI routes surplus food items to nearby verified NGOs before their expiration date. Select the 'Food' category, specify expiration date and quantity, and a volunteer will be assigned to pick it up.";
+  }
+  if (m.includes('electronic') || m.includes('laptop') || m.includes('phone')) {
+    return "Electronics (laptops, phones, accessories) listed on ReLoop AI get matched with schools, community centers, or certified recyclers if they are not in working condition.";
+  }
+  if (m.includes('ngo') || m.includes('match') || m.includes('receive')) {
+    return "Our AI matching engine scores recipients (NGOs and Recyclers) based on distance, urgency, storage availability, active streams, and pickup schedule compatibility.";
+  }
+  return "Welcome to ReLoop AI! I can help you understand how to list items (Food, Electronics, Furniture, Books, Clothes, Medical supplies, Recyclables), how vision AI auto-detects fields, and how matching works. What would you like to know?";
+}
+
+module.exports = { generateListing, generateImpactReport, askReLoop };

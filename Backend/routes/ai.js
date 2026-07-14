@@ -71,4 +71,18 @@ router.post('/impact', async (req, res) => {
   }
 });
 
+// POST /api/ai/chat  { message }
+router.post('/chat', async (req, res) => {
+  try {
+    const { message } = req.body || {};
+    if (!message) return res.status(400).json({ error: 'message required' });
+
+    const reply = await llm.askReLoop({ message });
+    return res.json({ reply });
+  } catch (e) {
+    console.error('[ai/chat]', e.message);
+    return res.status(500).json({ error: 'chat_failed', detail: e.message });
+  }
+});
+
 module.exports = router;

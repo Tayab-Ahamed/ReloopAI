@@ -28,7 +28,9 @@ const DonationForm: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
   const { user } = useAuth();
 
-  const selectedCategory = location.state?.category || 'food';
+  const [selectedCategory, setSelectedCategory] = useState(location.state?.category || 'food');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const isAiAssisted = location.state?.isAiAssisted;
 
   // Helper to get category-specific labels and placeholders
   const getCategoryDetails = (category: string) => {
@@ -166,6 +168,58 @@ const DonationForm: React.FC = () => {
     }
   };
 
+  const analyzeUploadedImage = async (imageFile: File) => {
+    setIsAnalyzing(true);
+    enqueueSnackbar('ReLoop AI is analyzing your image...', { variant: 'info', autoHideDuration: 4000 });
+    
+    try {
+      const base64Image = await convertImageToBase64(imageFile);
+      
+      const uploadResponse = await axios.post(
+        `${import.meta.env.VITE_Backend_URL}/api/upload`,
+        { base64Image, folder: 'donations' },
+        { withCredentials: true, timeout: 30000 }
+      );
+      
+      const imageUrl = uploadResponse.data.url;
+      
+      const analyzeResponse = await axios.post(
+        `${import.meta.env.VITE_Backend_URL}/api/ai/analyze`,
+        { imageUrl },
+        { withCredentials: true }
+      );
+      
+      const { vision, ocr, listing } = analyzeResponse.data;
+      
+      setFormData(prev => ({
+        ...prev,
+        name: listing?.title || prev.name,
+        description: listing?.description || prev.description,
+        foodType: listing?.donationInstructions || prev.foodType,
+        quantity: vision?.quantityEstimate?.toString() || prev.quantity,
+        expirationDate: ocr?.detectedExpiry 
+          ? new Date(ocr.detectedExpiry).toISOString().slice(0, 16) 
+          : (vision?.detectedExpiry 
+            ? new Date(vision.detectedExpiry).toISOString().slice(0, 16)
+            : prev.expirationDate),
+      }));
+      
+      if (listing?.category) {
+        setSelectedCategory(listing.category);
+      }
+      
+      enqueueSnackbar(`AI analysis complete! Auto-detected category: ${listing?.category || 'food'}`, { 
+        variant: 'success',
+        autoHideDuration: 5000 
+      });
+    } catch (err) {
+      console.error('AI analysis error:', err);
+      enqueueSnackbar('AI analysis failed, but you can still complete the form manually.', { variant: 'warning' });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   const handleChange = async (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -183,6 +237,10 @@ const DonationForm: React.FC = () => {
           const compressedFile = await compressImage(file);
           setFormData({ ...formData, [name]: compressedFile });
           setErrors({ ...errors, [name]: '' });
+          
+          if (isAiAssisted && name === 'donationImage') {
+            analyzeUploadedImage(compressedFile);
+          }
         } catch (error) {
           setErrors({ ...errors, donationImage: 'Error processing image. Please try another image.' });
           enqueueSnackbar('Error processing image. Please try another image.', { variant: 'error' });
@@ -363,7 +421,13 @@ const DonationForm: React.FC = () => {
             {details.title}
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="relative">
+          {isAnalyzing && (
+            <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-background/80 rounded-2xl backdrop-blur-sm">
+              <span className="h-10 w-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              <p className="mt-4 text-sm text-foreground/80 font-medium">ReLoop AI is analyzing your image...</p>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-5">
             {[
               {

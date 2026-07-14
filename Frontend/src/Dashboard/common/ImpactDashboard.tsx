@@ -1,8 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { useSnackbar } from "notistack";
 import { motion } from "framer-motion";
 import {
   Leaf, Utensils, Trash2, Building2, Users, TrendingUp, Cpu, Truck,
-  ArrowUpRight, Sparkles, Bot, Zap,
+  ArrowUpRight, Sparkles, Bot, Zap, X, Send,
 } from "lucide-react";
 import { CATEGORIES } from "@/lib/brand";
 
@@ -59,8 +62,43 @@ const statusChip = (s: string) => {
 };
 
 export const ImpactDashboard: React.FC = () => {
+  const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
+  
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [chatHistory, setChatHistory] = useState<Array<{ sender: 'user' | 'bot'; text: string }>>([
+    { sender: 'bot', text: 'Hi! I am ReLoop AI. Ask me anything about listing donations, our circular categories, volunteer routing, or NGO matching!' }
+  ]);
+  const [isSending, setIsSending] = useState(false);
+
   const sparkA = [8, 12, 10, 18, 22, 20, 28, 32, 30, 40, 44, 52];
   const sparkB = [22, 18, 26, 30, 34, 30, 42, 38, 46, 50, 56, 62];
+
+  const handleSendChat = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim() || isSending) return;
+
+    const userMsg = chatInput.trim();
+    setChatInput("");
+    setChatHistory(prev => [...prev, { sender: 'user', text: userMsg }]);
+    setIsSending(true);
+
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_Backend_URL}/api/ai/chat`, { message: userMsg });
+      const reply = response.data?.reply || "I couldn't process that response.";
+      setChatHistory(prev => [...prev, { sender: 'bot', text: reply }]);
+    } catch (error) {
+      console.error("Chat error:", error);
+      setChatHistory(prev => [...prev, { sender: 'bot', text: "Sorry, I am having trouble connecting right now. Please try again later." }]);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleUnderConstruction = (feature: string) => {
+    enqueueSnackbar(`${feature} is currently under development. Check back soon!`, { variant: 'info' });
+  };
 
   return (
     <div className="space-y-6">
@@ -72,8 +110,18 @@ export const ImpactDashboard: React.FC = () => {
           <p className="text-sm text-foreground/60">Real-time redistribution metrics across all seven resource streams.</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="btn-ghost"><Bot className="h-4 w-4" /> Ask ReLoop</button>
-          <button className="btn-primary"><Zap className="h-4 w-4" /> New listing</button>
+          <button 
+            onClick={() => setIsChatOpen(true)}
+            className="btn-ghost"
+          >
+            <Bot className="h-4 w-4" /> Ask ReLoop
+          </button>
+          <button 
+            onClick={() => navigate("/user/Donor/newdonation")}
+            className="btn-primary"
+          >
+            <Zap className="h-4 w-4" /> New listing
+          </button>
         </div>
       </div>
 
@@ -110,9 +158,12 @@ export const ImpactDashboard: React.FC = () => {
               <div className="text-xs uppercase tracking-widest text-foreground/55">Monthly impact</div>
               <div className="mt-1 font-display text-xl">Meals + CO₂ saved</div>
             </div>
-            <a href="#" className="text-xs text-foreground/60 inline-flex items-center gap-1 hover:text-foreground">
+            <button 
+              onClick={() => handleUnderConstruction("Full Analytics")}
+              className="text-xs text-foreground/60 inline-flex items-center gap-1 hover:text-foreground"
+            >
               Full analytics <ArrowUpRight className="h-3.5 w-3.5" />
-            </a>
+            </button>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-6">
             <div>
@@ -210,6 +261,70 @@ export const ImpactDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Ask ReLoop Chat Widget */}
+      {isChatOpen && (
+        <div className="fixed bottom-6 right-6 z-50 w-full max-w-md h-[500px] flex flex-col rounded-2xl border border-white/10 bg-card text-foreground shadow-2xl overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/[0.02]">
+            <div className="flex items-center gap-2">
+              <Bot className="h-5 w-5 text-brand-300" />
+              <div className="font-semibold text-sm">Ask ReLoop AI</div>
+            </div>
+            <button 
+              onClick={() => setIsChatOpen(false)}
+              className="rounded-full p-1 hover:bg-white/10 text-foreground/75 hover:text-foreground transition"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {chatHistory.map((msg, index) => (
+              <div 
+                key={index}
+                className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm leading-normal shadow-sm ${
+                  msg.sender === 'user' 
+                    ? 'bg-primary text-white rounded-tr-none' 
+                    : 'bg-white/[0.04] text-foreground/95 rounded-tl-none border border-white/5'
+                }`}>
+                  {msg.text}
+                </div>
+              </div>
+            ))}
+            {isSending && (
+              <div className="flex justify-start">
+                <div className="max-w-[80%] rounded-2xl rounded-tl-none px-4 py-2 bg-white/[0.04] text-foreground/60 text-sm border border-white/5 flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 bg-foreground/60 rounded-full animate-bounce" />
+                  <span className="h-1.5 w-1.5 bg-foreground/60 rounded-full animate-bounce [animation-delay:0.2s]" />
+                  <span className="h-1.5 w-1.5 bg-foreground/60 rounded-full animate-bounce [animation-delay:0.4s]" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Input Form */}
+          <form onSubmit={handleSendChat} className="p-3 border-t border-white/10 bg-white/[0.01] flex items-center gap-2">
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder="Ask me anything..."
+              className="flex-1 min-w-0 rounded-lg border border-white/10 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
+            />
+            <button
+              type="submit"
+              disabled={isSending || !chatInput.trim()}
+              className="inline-flex items-center justify-center rounded-lg bg-primary hover:bg-primary/95 text-white p-2.5 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              <Send className="h-4 w-4" />
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 };

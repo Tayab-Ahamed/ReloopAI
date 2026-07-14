@@ -29,7 +29,13 @@ const slideTransition = { duration: 0.55, ease: [0.22, 1, 0.36, 1] as [number, n
 const NewDonations: React.FC = () => {
   const navigate = useNavigate();
   const [i, setI] = useState(0);
-  const handleStart = (category?: string) => navigate("/user/Donor/donationForm", { state: { category } });
+  const handleStart = (category?: string) => {
+    if (category) {
+      navigate("/user/Donor/donationForm", { state: { category } });
+    } else {
+      navigate("/user/Donor/donationForm", { state: { isAiAssisted: true } });
+    }
+  };
 
   useEffect(() => {
     const t = setInterval(() => setI((v) => (v + 1) % slides.length), 4500);

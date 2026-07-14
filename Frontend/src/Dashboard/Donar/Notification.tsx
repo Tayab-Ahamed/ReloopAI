@@ -33,41 +33,36 @@ const Notification = () => {
   ];
 
   return (
-    <div className="p-8 min-h-screen  bg-gray-100 flex flex-col ">
+    <div className="p-8 min-h-screen bg-background text-foreground flex flex-col">
       {/* Header */}
-      <div className="text-3xl  font-semibold text-gray-900 mb-6">
+      <div className="text-3xl font-semibold text-foreground mb-6">
         <h1>Notifications</h1>
       </div>
 
       {/* Notification List */}
       <div className="w-4/5 space-y-4">
         {notify.map((notification, index) => {
-          // Assign different background colors conditionally
-          const bgColor = index % 3 === 0;
-
-          ("bg-gray-200 text-gray-500");
-
           return (
             <div
               key={index}
-              className={`p-4 flex gap-4 items-start rounded-lg shadow-md transition-all duration-300 ${bgColor}`}
+              className="p-4 flex gap-4 items-start rounded-lg border border-white/5 bg-card text-foreground shadow-md hover:bg-white/[0.02] transition-all duration-300"
             >
               {/* Icon */}
-              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                <GalleryVerticalEnd className="w-6 h-6 text-blue-400" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/20 text-primary">
+                <GalleryVerticalEnd className="w-6 h-6 text-primary" />
               </div>
 
               {/* Notification Content */}
               <div className="flex-1">
-                <h2 className="text-lg font-semibold">
+                <h2 className="text-lg font-semibold text-foreground">
                   {notification.heading}
                 </h2>
-                <p className="mt-1 text-sm opacity-80">
+                <p className="mt-1 text-sm text-foreground/80">
                   {notification.description}
                 </p>
 
                 {/* Date & Time */}
-                <p className="mt-2 text-xs opacity-60 flex items-center gap-2">
+                <p className="mt-2 text-xs text-foreground/60 flex items-center gap-2">
                   <Clock4 className="w-3" />
                   <span className="italic">
                     {notification.date} at {notification.time}
@@ -78,13 +73,13 @@ const Notification = () => {
               </div>
 
               {/* Message Icon */}
-              <MessageSquareDiff className="w-6 h-6 text-gray-700 cursor-pointer hover:text-gray-700 transition-all duration-300" />
+              <MessageSquareDiff className="w-6 h-6 text-foreground/60 cursor-pointer hover:text-foreground transition-all duration-300" />
             </div>
           );
         })}
 
         {/* Divider */}
-        {notify.length > 1 && <Separator className="mt-2 opacity-30" />}
+        {notify.length > 1 && <Separator className="mt-2 border-white/5 opacity-30" />}
       </div>
     </div>
   );

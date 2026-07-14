@@ -116,15 +116,27 @@ async function analyzeWithHF({ imageUrl }) {
   };
 }
 
-function analyzeMock({ hints }) {
-  const cat = hints.category || 'food';
+function analyzeMock({ hints = {} }) {
+  const categories = ['food', 'electronics', 'furniture', 'books', 'clothes', 'medical', 'recyclables'];
+  const cat = hints.category || categories[Math.floor(Math.random() * categories.length)];
+  
+  const mockNames = {
+    food: 'Mixed Organic Meals',
+    electronics: 'Dell Inspiron Laptop',
+    furniture: 'Ergonomic Office Chair',
+    books: 'High School Chemistry Textbooks',
+    clothes: 'Winter Coats and Jackets',
+    medical: 'Surgical Masks & Gloves',
+    recyclables: 'PET Plastic Containers',
+  };
+
   return {
-    itemDetected:     cat === 'food' ? 'Cooked rice & lentils' : `Sample ${cat} item`,
+    itemDetected:     mockNames[cat] || `Sample ${cat} item`,
     category:         cat,
     condition:        cat === 'food' ? 'fresh' : 'used_good',
-    quantityEstimate: cat === 'food' ? 4.2 : 1,
+    quantityEstimate: cat === 'food' ? 5 : 2,
     quantityUnit:     cat === 'food' ? 'kg' : 'unit',
-    confidence:       0.86,
+    confidence:       0.91,
     visionModel:      'mock/reloop-vision-v1',
   };
 }
