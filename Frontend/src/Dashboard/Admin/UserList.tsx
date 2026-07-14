@@ -45,15 +45,15 @@ const ActiveUser = () => {
     }
   };
 
-  // const handleSuspend = (id) => {
-  //   console.log(`User ${id} suspended`);
-  //   // Add logic to update user status in the backend
-  // };
+  const handleSuspend = (id: number) => {
+    console.log(`User ${id} suspended`);
+    // Add logic to update user status in the backend
+  };
 
-  // const handleActivate = (id) => {
-  //   console.log(`User ${id} activated`);
-  //   // Add logic to update user status in the backend
-  // };
+  const handleActivate = (id: number) => {
+    console.log(`User ${id} activated`);
+    // Add logic to update user status in the backend
+  };
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -138,8 +138,7 @@ const ActiveUser = () => {
                     
                     {/* Actions */}
                     <TableCell>
-                    
-                        <Button variant="success" size="sm" onClick={() => handleActivate(user.id)}>
+                        <Button className="bg-green-600 hover:bg-green-700 text-white" size="sm" onClick={() => handleActivate(user._id)}>
                           <CheckCircle className="mr-2" size={16} /> Activate
                         </Button>
                     </TableCell>
@@ -147,7 +146,7 @@ const ActiveUser = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan="6" className="text-center py-4 text-gray-500">
+                  <TableCell colSpan={6} className="text-center py-4 text-gray-500">
                     No users found.
                   </TableCell>
                 </TableRow>

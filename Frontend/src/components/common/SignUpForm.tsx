@@ -205,6 +205,9 @@ export default function SignUpForm({
       console.log("OTP verified:", response.data);
 
       if (response.data.success) {
+        if (response.data.token) {
+          localStorage.setItem("token", response.data.token);
+        }
         fetchUserData();
         enqueueSnackbar("Registration Successful!", { 
           variant: 'success',

@@ -6,6 +6,7 @@ interface LogoProps {
   className?: string;
   showWordmark?: boolean;
   size?: number;
+  variant?: string;
 }
 
 const Logo: React.FC<LogoProps> = ({ className, showWordmark = true, size = 32 }) => {

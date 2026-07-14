@@ -23,7 +23,7 @@ const Profile: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setUserData((prev) => ({
+    setUserData((prev: any) => ({
       ...prev,
       [name]: value,
     }));

@@ -139,6 +139,14 @@ const OTPVerification = async(req, res)=>{
       .json({
         success: true,
         message: "User registered successfully!",
+        token,
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          profileImage: user.profileImage,
+        }
     });
 
   } 
@@ -199,6 +207,14 @@ const AuthenticateUser = async (req, res) => {
       .json({
         success: true,
         message: "User Login successfull!",
+        token,
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          profileImage: user.profileImage,
+        }
       });
     } catch (err) {
       console.error(err.message);

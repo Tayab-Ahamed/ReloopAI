@@ -53,7 +53,7 @@ export default function FAQManagement() {
     fetchFAQS();
   }, []);
 
-  const handleAddFaq = async (faq: Faq) => {
+  const handleAddFaq = async (faq: Omit<Faq, '_id'>) => {
     try {
       const faqData = { question: faq.question, answer: faq.answer };
       const response = await axios.post(`${import.meta.env.VITE_Backend_URL}/api/faq`, faqData, { withCredentials: true });

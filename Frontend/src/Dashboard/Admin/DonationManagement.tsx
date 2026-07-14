@@ -40,8 +40,8 @@ const FoodDonationManagement = () => {
     }
   };
 
-  const handleTabChange = (newStatus: "pending" | "accepted" | "delivered") => {
-    setStatus(newStatus);
+  const handleTabChange = (newStatus: string) => {
+    setStatus(newStatus as "pending" | "accepted" | "delivered");
   };
 
   const getStatusBadge = (status: string) => {

@@ -4,10 +4,21 @@ const authMiddleware = (req, res, next) => {
    console.log("Accessed AuthMiddleware");
 
   try {
-    const token = req.cookies.token;
+    let token = req.cookies?.token;
+
+    // Fallback to Authorization header if cookie is not present
+    if (!token && req.headers.authorization) {
+      const parts = req.headers.authorization.split(' ');
+      if (parts[0] === 'Bearer') {
+        token = parts[1];
+      } else {
+        token = req.headers.authorization;
+      }
+    }
+
     if (!token) {
       return res.status(401).json({ 
-        sucess:false,
+        success: false,
         message: "No token, authorization denied" 
       });
     }
@@ -23,7 +34,8 @@ const authMiddleware = (req, res, next) => {
     console.error("Token verification error:", error.message);
     return res.status(401).json({
       success: false,
-      message: "Invalid or expired token" });
+      message: "Invalid or expired token"
+    });
   }
 };
 

@@ -44,6 +44,10 @@ export default function LoginForm({
         console.log("Login Successful:", res.data);
         enqueueSnackbar("Login Successful!", { variant: 'success' });
 
+        if (res.data.token) {
+          localStorage.setItem("token", res.data.token);
+        }
+
         await fetchUserData();
       } else {
         console.error("Login failed:", res.data);

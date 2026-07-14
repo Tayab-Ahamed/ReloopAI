@@ -16,7 +16,7 @@ interface MapComponentProps {
 function MapComponent({ origin, destination }: MapComponentProps) {
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY, // Replace with your actual API key
-    libraries, // Use the constant libraries array
+    libraries: libraries as any, // Use the constant libraries array
   });
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -67,8 +67,11 @@ function MapComponent({ origin, destination }: MapComponentProps) {
       });
 
       setDirectionsResponse(results);
-      setDistance(results.routes[0].legs[0].distance.text);
-      setDuration(results.routes[0].legs[0].duration.text);
+      const leg = results.routes?.[0]?.legs?.[0];
+      if (leg) {
+        setDistance(leg.distance?.text || '');
+        setDuration(leg.duration?.text || '');
+      }
     } catch (error) {
       console.error('Error calculating route:', error);
     }
@@ -99,7 +102,7 @@ function MapComponent({ origin, destination }: MapComponentProps) {
           <>
             <DirectionsRenderer directions={directionsResponse} />
             {/* Example of AdvancedMarkerElement */}
-            {window.google && window.google.maps && (
+            {window.google && window.google.maps && map && (
               <AdvancedMarkerElement
                 position={center || { lat: 0, lng: 0 }} // Fallback to {0, 0} if center is not set
                 map={map}

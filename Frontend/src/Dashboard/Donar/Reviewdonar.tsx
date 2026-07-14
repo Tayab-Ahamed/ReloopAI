@@ -68,7 +68,7 @@ function Review() {
 
       {!loading && feedback && feedback.length > 0 ? (
         <div className="px-4 space-y-6 mt-6">
-          {feedback.map((feedback) => (
+          {feedback.map((feedback: any) => (
             <Card
               key={feedback._id}
               className="p-6 hover:shadow-lg transition-shadow duration-300"

@@ -54,6 +54,9 @@ const AuthContextProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         withCredentials: true,
       });
   
+      // Clear token from localStorage
+      localStorage.removeItem("token");
+
       // Clear user state in frontend
       setUser(null);
       setIsLogin(false);

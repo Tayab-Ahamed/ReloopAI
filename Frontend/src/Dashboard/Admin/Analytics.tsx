@@ -47,7 +47,7 @@ const Dashboard = () => {
   const [totalNgos, setTotalNgos] =useState("");  
   const [pendingNgosCount, setPendingNgosCount] =useState("");
   const [totalDeliveredFood, setTotalDeliveredFood] =useState("");
-  const [yearlyChartData, setYearlyChartData] = useState({});
+  const [yearlyChartData, setYearlyChartData] = useState<Record<string, any>>({});
   const[totalFoodSaved,setTotalFoodSaved]=useState(0);
   interface Donor {
     name: string;
