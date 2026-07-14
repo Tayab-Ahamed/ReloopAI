@@ -82,7 +82,6 @@ const Hero: React.FC<HeroProps> = ({ className }) => {
 
         {/* Product mock */}
         <motion.div
-          id="ai"
           initial={mockInit}
           animate={mockAnim}
           transition={mockTrans}
@@ -146,7 +145,7 @@ const Hero: React.FC<HeroProps> = ({ className }) => {
                     <div className="mt-1 text-amber-300">in 5h 40m</div>
                   </div>
                 </div>
-                <div id="automation" className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
                   <div className="flex items-center justify-between">
                     <div className="text-sm font-medium">Best-match recipient</div>
                     <span className="chip">AI score 94</span>
@@ -162,7 +161,7 @@ const Hero: React.FC<HeroProps> = ({ className }) => {
           </div>
         </motion.div>
 
-        <div id="impact" className="mt-14 text-center text-xs uppercase tracking-[0.25em] text-foreground/45">
+        <div className="mt-14 text-center text-xs uppercase tracking-[0.25em] text-foreground/45">
           Built for the circular economy • Aligned to UN SDG 12
         </div>
       </div>
