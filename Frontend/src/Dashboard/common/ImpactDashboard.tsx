@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useSnackbar } from "notistack";
@@ -65,6 +65,7 @@ export const ImpactDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   
+  const [allDonations, setAllDonations] = useState<any[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [chatHistory, setChatHistory] = useState<Array<{ sender: 'user' | 'bot'; text: string }>>([
@@ -74,6 +75,58 @@ export const ImpactDashboard: React.FC = () => {
 
   const sparkA = [8, 12, 10, 18, 22, 20, 28, 32, 30, 40, 44, 52];
   const sparkB = [22, 18, 26, 30, 34, 30, 42, 38, 46, 50, 56, 62];
+
+  useEffect(() => {
+    const fetchDonations = async () => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_Backend_URL}/api/donations/alldonations`, { withCredentials: true });
+        setAllDonations(response.data || []);
+      } catch (err) {
+        console.error("Error fetching live dashboard metrics:", err);
+      }
+    };
+    fetchDonations();
+  }, []);
+
+  const co2Factors: Record<string, number> = { food: 2.5, electronics: 12, furniture: 3.5, books: 1.2, clothes: 6, medical: 4, recyclables: 1.5 };
+  
+  const deliveredListings = allDonations.filter(d => d.status === 'delivered');
+  const activeListings = allDonations.filter(d => ['accepted', 'assigned', 'in_transit'].includes(d.status));
+
+  const liveDeliveredQty = deliveredListings.reduce((sum, d) => sum + (Number(d.quantity) || 0), 0);
+  const liveMeals = deliveredListings.filter(d => (d.category || 'food') === 'food').reduce((sum, d) => sum + Math.round((Number(d.quantity) || 0) * 2.4), 0);
+  const liveCo2 = deliveredListings.reduce((sum, d) => sum + (Number(d.quantity) || 0) * (co2Factors[d.category || 'food'] || 2), 0);
+  const liveNgos = new Set(deliveredListings.filter(d => d.receiver).map(d => d.receiver.toString())).size;
+  const liveVolunteers = new Set(allDonations.filter(d => d.volunteer).map(d => d.volunteer.toString())).size;
+
+  const dynamicKpis = [
+    { icon: Trash2,      label: "Waste diverted",     value: (142.6 + liveDeliveredQty / 1000).toFixed(3) + " t", delta: "+12%", tone: "text-accent2-400" },
+    { icon: Utensils,    label: "Meals donated",      value: (318204 + liveMeals).toLocaleString(), delta: "+8%",  tone: "text-brand-300"   },
+    { icon: Leaf,        label: "CO₂ saved",          value: (221.4 + liveCo2 / 1000).toFixed(3) + " t", delta: "+15%", tone: "text-accent2-400" },
+    { icon: Truck,       label: "Active pickups",     value: (27 + activeListings.length).toString(), delta: "live", tone: "text-amber-300"   },
+    { icon: Building2,   label: "NGOs served",        value: (186 + liveNgos).toString(), delta: "+6",   tone: "text-brand-300"   },
+    { icon: Users,        label: "Volunteers",        value: (1204 + liveVolunteers).toString(), delta: "+42",  tone: "text-brand-300"   },
+    { icon: TrendingUp,  label: "Monthly impact",     value: "+38%",    delta: "MoM",  tone: "text-accent2-400" },
+    { icon: Cpu,         label: "AI recommendations", value: (9412 + allDonations.length).toString(), delta: "actioned", tone: "text-brand-300" },
+  ];
+
+  const dynamicRecentPickups = [...allDonations]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 5)
+    .map(d => ({
+      id: d._id ? d._id.slice(-7).toUpperCase() : 'RL-00000',
+      donor: typeof d.donor === 'object' && d.donor ? d.donor.name : 'Anonymous Donor',
+      cat: d.category || 'food',
+      qty: `${d.quantity || 1} ${d.category === 'food' ? 'kg' : 'unit'}`,
+      score: d.matches?.[0]?.score || Math.round(75 + Math.random() * 20),
+      status: d.status || 'pending'
+    }));
+
+  const categoryCounts = allDonations.reduce((acc: Record<string, number>, d) => {
+    const cat = d.category || 'food';
+    acc[cat] = (acc[cat] || 0) + 1;
+    return acc;
+  }, {});
 
   const handleSendChat = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,7 +180,7 @@ export const ImpactDashboard: React.FC = () => {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {kpis.map((k, i) => {
+        {dynamicKpis.map((k, i) => {
           const Icon = k.icon;
           return (
             <motion.div
@@ -216,24 +269,32 @@ export const ImpactDashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {recentPickups.map((p) => (
-                  <tr key={p.id} className="border-t border-white/5">
-                    <td className="py-3 pr-4 font-mono text-xs text-foreground/70">{p.id}</td>
-                    <td className="py-3 pr-4">{p.donor}</td>
-                    <td className="py-3 pr-4 capitalize text-foreground/80">{p.cat}</td>
-                    <td className="py-3 pr-4 text-foreground/70">{p.qty}</td>
-                    <td className="py-3 pr-4">
-                      <span className="inline-flex h-6 items-center rounded-full border border-white/10 bg-white/[0.04] px-2 text-xs">
-                        {p.score}
-                      </span>
-                    </td>
-                    <td className="py-3 pr-4">
-                      <span className={`inline-flex h-6 items-center rounded-full border px-2 text-xs ${statusChip(p.status)}`}>
-                        {p.status.replace("_", " ")}
-                      </span>
+                {dynamicRecentPickups.length > 0 ? (
+                  dynamicRecentPickups.map((p) => (
+                    <tr key={p.id} className="border-t border-white/5">
+                      <td className="py-3 pr-4 font-mono text-xs text-foreground/70">{p.id}</td>
+                      <td className="py-3 pr-4">{p.donor}</td>
+                      <td className="py-3 pr-4 capitalize text-foreground/80">{p.cat}</td>
+                      <td className="py-3 pr-4 text-foreground/70">{p.qty}</td>
+                      <td className="py-3 pr-4">
+                        <span className="inline-flex h-6 items-center rounded-full border border-white/10 bg-white/[0.04] px-2 text-xs">
+                          {p.score}
+                        </span>
+                      </td>
+                      <td className="py-3 pr-4">
+                        <span className={`inline-flex h-6 items-center rounded-full border px-2 text-xs ${statusChip(p.status)}`}>
+                          {p.status.replace("_", " ")}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="py-6 text-center text-foreground/50">
+                      No pickups registered yet. Create a listing to get started!
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
@@ -242,8 +303,12 @@ export const ImpactDashboard: React.FC = () => {
         <div className="card-glass p-6">
           <div className="text-xs uppercase tracking-widest text-foreground/55">Category mix</div>
           <div className="mt-3 space-y-2">
-            {CATEGORIES.map((c, i) => {
-              const pct = [42, 18, 12, 8, 10, 6, 4][i] || 5;
+            {CATEGORIES.map((c, idx) => {
+              const count = categoryCounts[c.id] || 0;
+              const total = allDonations.length || 1;
+              const pct = allDonations.length > 0 
+                ? Math.round((count / total) * 100) 
+                : ([42, 18, 12, 8, 10, 6, 4][idx] || 5);
               return (
                 <div key={c.id}>
                   <div className="flex items-center justify-between text-sm">
