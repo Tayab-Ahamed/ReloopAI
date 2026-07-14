@@ -51,7 +51,7 @@ const sendOTPUsingEmail = async(req, res)=>{
       }
 
       // Generate OTP
-      const otp = crypto.randomBytes(3).toString('hex').toLowerCase(); // Generates a 6-character OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString(); // Generates a 6-digit numeric OTP
 
       // Save OTP to database
       await OTP.create({ email, otp });
@@ -90,7 +90,7 @@ const OTPVerification = async(req, res)=>{
     // Find OTP in database
     const storedOTP = await OTP.findOne({ email }).sort({ createdAt: -1 });
 
-    if (!storedOTP || otp !== storedOTP.otp) {
+    if (!storedOTP || otp.trim() !== storedOTP.otp.trim()) {
       return res.status(400).json({
         success: false,
         message: 'Invalid OTP' 
