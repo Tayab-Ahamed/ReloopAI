@@ -9,8 +9,10 @@ interface LogoProps {
   variant?: string;
 }
 
-const Logo: React.FC<LogoProps> = ({ className, showWordmark = true, size = 32 }) => {
+const Logo: React.FC<LogoProps> = ({ className, showWordmark = true, size = 32, variant }) => {
   const boxStyle: React.CSSProperties = { width: size, height: size };
+  const actualShowWordmark = variant === "mark" ? false : showWordmark;
+
   return (
     <div className={cn("flex items-center gap-2.5", className)}>
       <span
@@ -33,7 +35,7 @@ const Logo: React.FC<LogoProps> = ({ className, showWordmark = true, size = 32 }
           <circle cx="32" cy="32" r="3.2" fill="url(#reloop-g)" />
         </svg>
       </span>
-      {showWordmark && (
+      {actualShowWordmark && (
         <span className="font-display text-[1.05rem] font-semibold tracking-tight text-foreground">
           {BRAND.short}
           <span className="ml-1 rounded-md bg-white/[0.06] px-1.5 py-0.5 text-[0.65rem] font-medium tracking-wider text-foreground/80 align-middle">
