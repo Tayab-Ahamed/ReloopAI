@@ -43,7 +43,7 @@ const LandingPage = () => {
   }, []);
 
   return (
-    <div className="relative z-0">
+    <div className="relative z-0 overflow-x-hidden">
       <ScrollProgress />
       <CursorGlow />
       <Navbar className="relative z-[1000]" />

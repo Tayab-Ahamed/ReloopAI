@@ -32,6 +32,7 @@ const DEFAULT_FAQS: Faq[] = [
 
 function App() {
   const [faqData, setFaqData] = useState<Faq[]>([]);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   const fetchfaqData = async () => {
     try {
@@ -56,7 +57,7 @@ function App() {
   return (
     <div className="max-w-4xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
       {/* FAQ Section */}
-      <div className="mb-20">
+      <div className="mb-20 animate-in fade-in duration-300">
         {/* FAQ Heading */}
         <h2 className="text-4xl font-bold font-display text-center mb-12 text-foreground">
           FAQ
@@ -64,22 +65,34 @@ function App() {
 
         {/* FAQ List */}
         <div className="space-y-4">
-          {faqData.map((faq, index) => (
-            <div
-              key={index}
-              className="border border-white/10 bg-white/[0.02] hover:bg-white/[0.04] transition-all rounded-lg shadow-sm"
-            >
-              <details className="group">
-                <summary className="flex items-center justify-between cursor-pointer p-6">
+          {faqData.map((faq, index) => {
+            const isOpen = activeIndex === index;
+            return (
+              <div
+                key={index}
+                className="border border-white/10 bg-white/[0.02] hover:bg-white/[0.04] transition-all rounded-lg shadow-sm overflow-hidden"
+              >
+                <div
+                  onClick={() => setActiveIndex(isOpen ? null : index)}
+                  className="flex items-center justify-between cursor-pointer p-6 select-none"
+                >
                   <span className="text-lg font-semibold text-foreground/90">
                     {faq.question}
                   </span>
-                  <ChevronUp className="text-accent2-400 group-open:rotate-180 transition-transform" />
-                </summary>
-                <p className="px-6 pb-6 text-foreground/70 leading-relaxed text-sm">{faq.answer}</p>
-              </details>
-            </div>
-          ))}
+                  <ChevronUp 
+                    className={`text-accent2-400 transition-transform duration-300 ${
+                      isOpen ? 'rotate-180' : ''
+                    }`} 
+                  />
+                </div>
+                {isOpen && (
+                  <p className="px-6 pb-6 text-foreground/70 leading-relaxed text-sm animate-in fade-in slide-in-from-top-2 duration-200">
+                    {faq.answer}
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

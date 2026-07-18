@@ -143,7 +143,7 @@ export const DetailedSections: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-tr from-brand-500/5 to-transparent blur-3xl -z-10" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="order-2 lg:order-1">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="card-glass p-6 border-white/10 text-center">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-500/10 text-brand-400 mx-auto mb-4">
                   <Leaf className="h-5 w-5" />
@@ -158,7 +158,7 @@ export const DetailedSections: React.FC = () => {
                 <div className="text-2xl font-bold text-foreground">1 kg = 2.4</div>
                 <p className="text-xs text-foreground/60 mt-1">Nutritious meals converted</p>
               </div>
-              <div className="card-glass p-6 border-white/10 text-center col-span-2">
+              <div className="card-glass p-6 border-white/10 text-center sm:col-span-2">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-500/10 text-brand-400 mx-auto mb-4">
                   <Award className="h-5 w-5" />
                 </div>

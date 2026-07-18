@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useNavigate, useLocation } from "react-router-dom";
 import { Textarea } from '@/components/ui/textarea';
-import { Upload, Calendar, MapPin, Pizza, ClipboardList, FileText } from 'lucide-react';
+import { Upload, Calendar, MapPin, Pizza, ClipboardList, FileText, Camera } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
 import imageCompression from 'browser-image-compression';
@@ -498,15 +498,49 @@ const DonationForm: React.FC = () => {
               <Label htmlFor="donationImage" className="text-lg font-medium flex items-center gap-2 text-foreground/90">
                 <Upload className="w-5 h-5" /> {details.imageLabel}
               </Label>
-              <Input
-                id="donationImage"
-                name="donationImage"
-                type="file"
-                accept="image/*"
-                onChange={handleChange}
-                className="mt-1 w-full border rounded-lg p-3 bg-background border-white/10 text-foreground focus:ring-2 focus:ring-primary"
-              />
-              {errors.donationImage && <p className="text-sm text-red-500">{errors.donationImage}</p>}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
+                {/* File picker */}
+                <div>
+                  <Input
+                    id="donationImage"
+                    name="donationImage"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleChange}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => document.getElementById('donationImage')?.click()}
+                    className="w-full border border-white/10 bg-background text-foreground hover:bg-white/5 py-6 flex items-center justify-center gap-2 rounded-xl"
+                  >
+                    <Upload className="w-5 h-5 text-foreground/60" />
+                    <span>Choose from Gallery</span>
+                  </Button>
+                </div>
+
+                {/* Camera capture */}
+                <div>
+                  <Input
+                    id="donationImageCamera"
+                    name="donationImage"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleChange}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => document.getElementById('donationImageCamera')?.click()}
+                    className="w-full bg-primary hover:bg-primary/95 text-white py-6 flex items-center justify-center gap-2 rounded-xl shadow-glow animate-pulse hover:animate-none"
+                  >
+                    <Camera className="w-5 h-5" />
+                    <span>Open Camera / Snap Photo</span>
+                  </Button>
+                </div>
+              </div>
+              {errors.donationImage && <p className="text-sm text-red-500 mt-1">{errors.donationImage}</p>}
             </div>
 
             <div className="flex justify-center pt-4">
