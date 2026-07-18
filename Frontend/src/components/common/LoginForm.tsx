@@ -60,6 +60,7 @@ export default function LoginForm({
   };
 
   const handleGoogleLogin = async () => {
+    console.log("Attempting mock Google login...");
     enqueueSnackbar("Initiating Google Sign-In...", { variant: "info" });
     try {
       const targetEmail = email.trim() || "wix6buyg5g@bwmyga.com";
