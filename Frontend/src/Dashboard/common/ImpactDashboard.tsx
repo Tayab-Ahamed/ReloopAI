@@ -5,8 +5,9 @@ import { useSnackbar } from "notistack";
 import { motion } from "framer-motion";
 import {
   Leaf, Utensils, Trash2, Building2, Users, TrendingUp, Cpu, Truck,
-  ArrowUpRight, Sparkles, Bot, Zap, X, Send,
+  ArrowUpRight, Sparkles, Bot, Zap, X, Send, ListChecks
 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 import { CATEGORIES } from "@/lib/brand";
 
 const kpis = [
@@ -64,6 +65,7 @@ const statusChip = (s: string) => {
 export const ImpactDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
+  const { user } = useAuth();
   
   const [allDonations, setAllDonations] = useState<any[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -169,12 +171,21 @@ export const ImpactDashboard: React.FC = () => {
           >
             <Bot className="h-4 w-4" /> Ask ReLoop
           </button>
-          <button 
-            onClick={() => navigate("/user/Donor/newdonation")}
-            className="btn-primary"
-          >
-            <Zap className="h-4 w-4" /> New listing
-          </button>
+          {user?.role === 'NGO' ? (
+            <button 
+              onClick={() => navigate("/user/NGO/listings")}
+              className="btn-primary"
+            >
+              <ListChecks className="h-4 w-4" /> Browse listings
+            </button>
+          ) : (
+            <button 
+              onClick={() => navigate("/user/Donor/newdonation")}
+              className="btn-primary"
+            >
+              <Zap className="h-4 w-4" /> New listing
+            </button>
+          )}
         </div>
       </div>
 

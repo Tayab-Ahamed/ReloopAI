@@ -163,7 +163,7 @@ const TrackDonations = () => {
 
   const handleShowMap = (pickupLocation: string) => {
     // Set origin (NGO's location) and destination (donor's pickup location)
-    setOrigin(loggedInNGO.location);
+    setOrigin(user?.location || 'Satara, Maharashtra');
     setDestination(pickupLocation);
     setShowMap(true); // Show the map
   };
