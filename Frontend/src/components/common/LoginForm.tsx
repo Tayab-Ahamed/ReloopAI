@@ -45,6 +45,7 @@ export default function LoginForm({
 
         if (res.data.token) {
           localStorage.setItem("token", res.data.token);
+          axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
         }
 
         await fetchUserData();

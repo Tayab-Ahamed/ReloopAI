@@ -20,6 +20,10 @@ const AuthContextProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   async function fetchUserData() {
     console.log("Fetching User Data...");
+    const token = localStorage.getItem("token");
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    }
     
     try{
       const response = await axios.get(
@@ -56,6 +60,7 @@ const AuthContextProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   
       // Clear token from localStorage
       localStorage.removeItem("token");
+      delete axios.defaults.headers.common['Authorization'];
 
       // Clear user state in frontend
       setUser(null);

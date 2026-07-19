@@ -11,7 +11,18 @@ const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
 const origins = (process.env.CORS_ORIGINS || 'http://localhost:5173').split(',').map((value) => value.trim()).filter(Boolean);
-app.use(cors({ origin(origin, cb) { if (!origin || origins.includes(origin)) return cb(null, true); return cb(new Error('Origin is not allowed by CORS')); }, credentials: true, methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'PATCH'], allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-reloop-secret', 'x-reloop-event-id', 'x-reloop-timestamp', 'x-reloop-signature'] }));
+app.use(cors({
+  origin(origin, cb) {
+    if (!origin || origins.includes(origin) || origin.endsWith('.vercel.app') || process.env.NODE_ENV !== 'production') {
+      return cb(null, true);
+    }
+    console.warn('[reloop] CORS blocked origin:', origin);
+    return cb(new Error('Origin is not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-reloop-secret', 'x-reloop-event-id', 'x-reloop-timestamp', 'x-reloop-signature']
+}));
 app.use(securityHeaders, cookieParser());
 app.use(express.json({ limit: '7mb', verify(req, _res, buffer) { req.rawBody = Buffer.from(buffer); } }));
 app.use(express.urlencoded({ limit: '100kb', extended: false, parameterLimit: 1000 }));

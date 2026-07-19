@@ -133,10 +133,11 @@ const OTPVerification = async(req, res)=>{
 
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '12h' });
 
+    const isProd = process.env.NODE_ENV === 'production';
     res.cookie("token", token, {
       httpOnly: true,
-      // secure: true,
-      sameSite: "Strict",
+      secure: isProd,
+      sameSite: isProd ? "None" : "Strict",
       maxAge: 12 * 60 * 60 * 1000,
     }).status(200)
       .json({
@@ -200,10 +201,11 @@ const AuthenticateUser = async (req, res) => {
 
       const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '12h' });
 
+      const isProd = process.env.NODE_ENV === 'production';
       res.cookie("token", token, {
         httpOnly: true,
-        // secure: true,
-        sameSite: "Strict",
+        secure: isProd,
+        sameSite: isProd ? "None" : "Strict",
         maxAge: 12 * 60 * 60 * 1000,
       })
       .status(200)
