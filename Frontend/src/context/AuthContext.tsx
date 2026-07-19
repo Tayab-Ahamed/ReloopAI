@@ -57,17 +57,15 @@ const AuthContextProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       await axios.post(`${import.meta.env.VITE_Backend_URL}/user/logout`, {}, {
         withCredentials: true,
       });
-  
-      // Clear token from localStorage
-      localStorage.removeItem("token");
-      delete axios.defaults.headers.common['Authorization'];
-
-      // Clear user state in frontend
-      setUser(null);
-      setIsLogin(false);
     } 
     catch (error) {
       console.error("Logout Error:", error);
+    } finally {
+      // Clear token and local state regardless of API success
+      localStorage.removeItem("token");
+      delete axios.defaults.headers.common['Authorization'];
+      setUser(null);
+      setIsLogin(false);
     }
   };
   
