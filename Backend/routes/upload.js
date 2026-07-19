@@ -14,12 +14,15 @@ const TYPES = [
 
 function decodeImage(value) {
   if (typeof value !== 'string') throw new Error('Image is required');
-  const match = value.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);
+  const cleanValue = value.replace(/\s/g, ''); // Strip all whitespace and newlines
+  const match = cleanValue.match(/^data:(image\/(?:jpeg|jpg|png|webp));base64,([A-Za-z0-9+/=]+)$/);
   if (!match) throw new Error('Only JPEG, PNG, or WebP image data is accepted');
+  let mimeType = match[1];
+  if (mimeType === 'image/jpg') mimeType = 'image/jpeg';
   const buffer = Buffer.from(match[2], 'base64');
   if (!buffer.length || buffer.length > MAX_BYTES) throw new Error('Image must be between 1 byte and 5 MB');
   const signature = TYPES.find((entry) => entry.bytes.every((byte, index) => buffer[index] === byte));
-  if (!signature || signature.mime !== match[1]) throw new Error('Image content does not match its declared type');
+  if (!signature || signature.mime !== mimeType) throw new Error('Image content does not match its declared type');
   return { buffer, contentType: signature.mime };
 }
 
