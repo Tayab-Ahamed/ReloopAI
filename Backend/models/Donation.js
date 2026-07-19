@@ -77,8 +77,11 @@ const listingSchema = new mongoose.Schema({
     generatedAt:    Date,
   },
 
-  otp:        { type: String, default: null },
-  otpExpires: { type: Date,   default: null },
+  // Delivery confirmation secrets are never stored in plaintext.
+  otpHash:            { type: String, default: null, select: false },
+  otpExpires:         { type: Date, default: null },
+  otpAttemptCount:    { type: Number, default: 0 },
+  deliveryVerifiedAt: { type: Date, default: null },
 
   createdAt:  { type: Date, default: Date.now },
   updatedAt:  { type: Date, default: Date.now },

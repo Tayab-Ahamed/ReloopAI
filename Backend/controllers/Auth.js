@@ -54,7 +54,8 @@ const sendOTPUsingEmail = async(req, res)=>{
       const otp = Math.floor(100000 + Math.random() * 900000).toString(); // Generates a 6-digit numeric OTP
 
       // Save OTP to database
-      await OTP.create({ email, otp });
+      await OTP.deleteMany({ email, purpose: 'registration' });
+      await OTP.create({ email, otpHash: await bcrypt.hash(otp, 12), purpose: 'registration' });
 
       // Send OTP via email
       const subject = 'Shareplat - Verify your Eamail';
@@ -88,17 +89,19 @@ const OTPVerification = async(req, res)=>{
   try {
 
     // Find OTP in database using find().sort().limit(1) for guaranteed sorting order
-    const otpDocs = await OTP.find({ email }).sort({ createdAt: -1 }).limit(1);
-    const storedOTP = otpDocs[0];
+    const storedOTP = await OTP.findOne({ email, purpose: 'registration' }).select('+otpHash').sort({ createdAt: -1 });
 
-    if (!storedOTP || otp.trim() !== storedOTP.otp.trim()) {
-      console.warn(`[reloop] OTP verification failed. Stored: ${storedOTP ? storedOTP.otp : 'NONE'}, Entered: ${otp}`);
+    if (!storedOTP || storedOTP.attemptCount >= 5 || !(await bcrypt.compare(String(otp || ''), storedOTP.otpHash))) {
+      if (storedOTP) { storedOTP.attemptCount += 1; await storedOTP.save(); }
+      console.warn('[reloop] OTP verification failed');
       return res.status(400).json({
         success: false,
         message: 'Invalid OTP' 
       });
     }
     
+
+    await OTP.deleteOne({ _id: storedOTP._id });
 
     // Create new user
     const user = new User({
@@ -238,10 +241,11 @@ const ForgotPasswordOTP = async (req, res) => {
 
     // Generate OTP
     const otp = crypto.randomBytes(3).toString('hex').toLowerCase();
-    console.log(`Generated OTP for ${email}: ${otp}`);
+    console.info('[reloop] password reset OTP generated');
 
     // Save OTP to database
-    const otpEntry = new OTP({ email, otp });
+    await OTP.deleteMany({ email, purpose: 'password-reset' });
+    const otpEntry = new OTP({ email, otpHash: await bcrypt.hash(otp, 12), purpose: 'password-reset' });
     await otpEntry.save();
 
     // Send OTP via email
@@ -254,7 +258,7 @@ const ForgotPasswordOTP = async (req, res) => {
     } catch (emailError) {
       console.error('Email sending failed:', emailError);
       // Clean up OTP if email fails
-      await OTP.deleteOne({ email, otp });
+      await OTP.deleteOne({ _id: otpEntry._id });
       return res.status(500).json({ 
         msg: 'Failed to send OTP email',
         error: emailError.message 
@@ -264,7 +268,7 @@ const ForgotPasswordOTP = async (req, res) => {
     console.error('Error in ForgotPasswordOTP:', err);
     res.status(500).json({ 
       msg: 'Server error',
-      error: err.message 
+      error: 'Request could not be completed' 
     });
   }
 };
@@ -278,8 +282,9 @@ const ForgotPassword = async (req, res) => {
 
   try {
     // Find OTP in database
-    const storedOTP = await OTP.findOne({ email, otp });
-    if (!storedOTP) {
+    const storedOTP = await OTP.findOne({ email, purpose: 'password-reset' }).select('+otpHash').sort({ createdAt: -1 });
+    if (!storedOTP || storedOTP.attemptCount >= 5 || !(await bcrypt.compare(String(otp || ''), storedOTP.otpHash))) {
+      if (storedOTP) { storedOTP.attemptCount += 1; await storedOTP.save(); }
       return res.status(400).json({ msg: 'Invalid OTP' });
     }
 
@@ -304,13 +309,14 @@ const resetPassword = async (req, res) => {
     }
 
     // Find OTP in database
-    const storedOTP = await OTP.findOne({ email, otp: otp.toLowerCase() });
-    if (!storedOTP) {
+    const storedOTP = await OTP.findOne({ email, purpose: 'password-reset' }).select('+otpHash').sort({ createdAt: -1 });
+    if (!storedOTP || storedOTP.attemptCount >= 5 || !(await bcrypt.compare(String(otp || ''), storedOTP.otpHash))) {
+      if (storedOTP) { storedOTP.attemptCount += 1; await storedOTP.save(); }
       return res.status(400).json({ msg: 'Invalid OTP' });
     }
     
     // Log the OTP for debugging
-    console.log(`Retrieved OTP for ${email}: ${storedOTP.otp}`);
+    console.info('[reloop] password reset OTP validated');
 
     // Hash new password
     const salt = await bcrypt.genSalt(10);
@@ -320,7 +326,7 @@ const resetPassword = async (req, res) => {
     await User.findOneAndUpdate({ email }, { password: hashedPassword });
 
     // Delete OTP from database
-    await OTP.deleteOne({ email, otp: otp.toLowerCase() });
+    await OTP.deleteOne({ _id: storedOTP._id });
 
     res.json({ success: true, msg: 'Password reset successfully' });
   } catch (err) {
@@ -329,57 +335,4 @@ const resetPassword = async (req, res) => {
   }
 };
 
-const GoogleLogin = async (req, res) => {
-  const { email } = req.body;
-  if (!email) {
-    return res.status(400).json({ msg: 'Email is required for Google login' });
-  }
-  try {
-    let user = await User.findOne({ email });
-    if (!user) {
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash("google-oauth-dummy-pass", salt);
-      user = new User({
-        name: "Google User",
-        email: email,
-        password: hashedPassword,
-        role: "Donar",
-      });
-      await user.save();
-    }
-
-    const payload = {
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      },
-    };
-
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '12h' });
-
-    res.cookie("token", token, {
-      httpOnly: true,
-      sameSite: "Strict",
-      maxAge: 12 * 60 * 60 * 1000,
-    })
-    .status(200)
-    .json({
-      success: true,
-      message: "Google OAuth Login successful!",
-      token,
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        profileImage: user.profileImage,
-      }
-    });
-  } catch (err) {
-    console.error("Google Login Error:", err.message);
-    res.status(500).send('Server error');
-  }
-};
-
-module.exports = {sendOTPUsingEmail, OTPVerification, AuthenticateUser, ForgotPasswordOTP, ForgotPassword, resetPassword, GoogleLogin}
+module.exports = { sendOTPUsingEmail, OTPVerification, AuthenticateUser, ForgotPasswordOTP, ForgotPassword, resetPassword };

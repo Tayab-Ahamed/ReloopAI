@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+
+import React from 'react';
 import UserDashboard from './UserDashBoard';
 import { useAuth } from '@/context/AuthContext';
 import { AlertCircle } from 'lucide-react'; 
-import { Button } from '@/components/ui/button';
-import axios from 'axios';
 
 import { 
     LayoutDashboard,
@@ -14,21 +13,8 @@ import {
 
 
 const NGODashboard: React.FC = () => {
-    const {user, fetchUserData} = useAuth();
-    const [isVerifying, setIsVerifying] = useState(false);
+    const {user} = useAuth();
     console.log(user);
-
-    const handleVerifyNgo = async () => {
-      setIsVerifying(true);
-      try {
-        await axios.get(`${import.meta.env.VITE_Backend_URL}/api/ngos/approve/${user?._id}`);
-        await fetchUserData();
-      } catch (err) {
-        console.error("Self approval failed:", err);
-      } finally {
-        setIsVerifying(false);
-      }
-    };
 
     const NGO = {
         navMenu: [
@@ -94,15 +80,25 @@ const NGODashboard: React.FC = () => {
                 </p>
 
                 {/* Action Buttons */}
-                <div className="flex gap-4 justify-center">
-                  <Button
-                    onClick={handleVerifyNgo}
-                    disabled={isVerifying}
-                    className="bg-primary hover:bg-primary/95 text-white font-semibold shadow-glow animate-pulse"
-                  >
-                    {isVerifying ? "Verifying..." : "Verify NGO (Demo Mode)"}
-                  </Button>
-                </div>
+                {/* <div className="flex gap-4 justify-center">
+                <Button
+                    onClick={() => {
+                    // Add logic to request verification
+                    console.log("Request Verification");
+                    }}
+                >
+                    Request Verification
+                </Button>
+                <Button
+                    variant="outline" // Assuming you have an outline variant
+                    onClick={() => {
+                    // Add logic to contact support
+                    console.log("Contact Support");
+                    }}
+                >
+                    Contact Support
+                </Button>
+                </div> */}
             </div>
         </div>
       }

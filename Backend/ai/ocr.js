@@ -4,6 +4,9 @@ const axios = require('axios');
 
 async function extractText({ imageUrl }) {
   const provider = (process.env.OCR_PROVIDER || 'mock').toLowerCase();
+  if (provider === 'mock' && process.env.NODE_ENV === 'production') {
+    throw new Error('A production OCR provider must be configured');
+  }
   if (provider === 'groq' && process.env.GROQ_API_KEY) return ocrGroq({ imageUrl });
   if (provider === 'openai' && process.env.OPENAI_API_KEY) return ocrOpenAI({ imageUrl });
   if (provider === 'google' && process.env.GOOGLE_VISION_KEY) return ocrGoogle({ imageUrl });

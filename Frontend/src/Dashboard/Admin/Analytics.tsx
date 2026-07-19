@@ -117,7 +117,7 @@ const chartData = yearlyChartData[selectedYear] || [];
         {withCredentials: true}
       );
       console.log("ngos data",response.data);
-      setPendingNgosCount(response.data.PendingNgosCount);
+      setPendingNgosCount(response.data.pendingNgosCount);
     } catch (error) {
       console.error("Error fetching pending ngos:", error);
     }

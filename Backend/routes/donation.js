@@ -1,55 +1,28 @@
 const express = require('express');
 const router = express.Router();
-const { authMiddleware } = require('../middlewares/Authentication');
-const { 
-  getDonationsUsingStatus,
-  getDonationUsingId,
-  getTotalDonations, 
-  deliverdDonationsCount, 
-  createDonation,
-  getTotalFoodSaved,
-  getTopDonors,
-  getMyDonations,
-  addDonationToUser,
-  getMatchNgos,
-  getAcceptedDonations,
-  completeDonation,
-  getMyAcceptedAndDeliveredDonations,
-  submitFeedback,
-  getFeedbackDetails,
-  generateDeliveryOTP,
-  verifyDeliveryOTP,
-  getNgoDashboardData,   // <-- imported new method,
-  getalldonations,
-  getAcceptedDonationsByDonor
-} = require('../controllers/Donation');
+const { authMiddleware, requireRoles } = require('../middlewares/Authentication');
+const c = require('../controllers/Donation');
+const secure = require('../controllers/DonationSecurity');
 
-// Base routes
-router.post("/create", authMiddleware, createDonation);
-router.get("/totaldonations", authMiddleware, getTotalDonations);
-router.get("/totaldeliveredfood", authMiddleware, deliverdDonationsCount);
-router.get("/totalfoodsaved", authMiddleware, getTotalFoodSaved);
-router.get("/topdonors", authMiddleware, getTopDonors);
-router.get("/my-donations", authMiddleware, getMyDonations);
-router.get("/accepted", authMiddleware, getAcceptedDonations);
-router.get("/my-accepted-delivered", authMiddleware, getMyAcceptedAndDeliveredDonations);
-router.get("/alldonations", authMiddleware, getalldonations);
-router.get("/accepteddonationsbydonor", authMiddleware, getAcceptedDonationsByDonor);
-
-// New route for NGO dashboard data
-router.get("/ngo-dashboard", authMiddleware, getNgoDashboardData);
-
-// Routes with parameters
-router.get("/:status", authMiddleware, getDonationsUsingStatus);
-router.get("/donation/:ListId", authMiddleware, getDonationUsingId);
-router.put("/:donationId/assign", authMiddleware, addDonationToUser);
-router.patch("/:donationId/complete", authMiddleware, completeDonation);
-router.post("/:donationId/feedback", authMiddleware, submitFeedback);
-router.get("/:donationId/feedback", authMiddleware, getFeedbackDetails);
-router.post("/:donationId/generate-otp", authMiddleware, generateDeliveryOTP);
-router.post("/:donationId/verify-otp", authMiddleware, verifyDeliveryOTP);
-
-// Special routes (should be before /:status to avoid conflicts)
-router.post("/match-ngos", authMiddleware, getMatchNgos);
-
+router.use(authMiddleware);
+router.post('/create', requireRoles('Donor', 'Admin'), secure.createDonation);
+router.get('/my-donations', requireRoles('Donor', 'Admin'), c.getMyDonations);
+router.get('/accepted', requireRoles('NGO', 'Admin'), c.getAcceptedDonations);
+router.get('/my-accepted-delivered', requireRoles('NGO', 'Admin'), c.getMyAcceptedAndDeliveredDonations);
+router.put('/:donationId/assign', requireRoles('NGO', 'Admin'), secure.addDonationToUser);
+router.patch('/:donationId/complete', requireRoles('NGO', 'Admin'), secure.completeDonation);
+router.post('/:donationId/generate-otp', requireRoles('Donor', 'Admin'), secure.generateDeliveryOTP);
+router.post('/:donationId/verify-otp', requireRoles('NGO', 'Admin'), secure.verifyDeliveryOTP);
+router.post('/:donationId/feedback', requireRoles('NGO', 'Admin'), c.submitFeedback);
+router.get('/:donationId/feedback', c.getFeedbackDetails);
+router.post('/match-ngos', requireRoles('Donor', 'Admin'), c.getMatchNgos);
+router.get('/ngo-dashboard', requireRoles('NGO', 'Admin'), c.getNgoDashboardData);
+router.get('/accepteddonationsbydonor', requireRoles('Donor', 'Admin'), c.getAcceptedDonationsByDonor);
+router.get('/totaldonations', requireRoles('Admin'), c.getTotalDonations);
+router.get('/totaldeliveredfood', requireRoles('Admin'), c.deliverdDonationsCount);
+router.get('/totalfoodsaved', requireRoles('Admin'), c.getTotalFoodSaved);
+router.get('/topdonors', requireRoles('Admin'), c.getTopDonors);
+router.get('/alldonations', requireRoles('Admin'), c.getalldonations);
+router.get('/:status', requireRoles('NGO', 'Admin'), c.getDonationsUsingStatus);
+router.get('/donation/:ListId', secure.getDonationUsingId);
 module.exports = router;

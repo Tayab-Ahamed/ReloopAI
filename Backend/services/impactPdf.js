@@ -1,10 +1,18 @@
-// Impact PDF stub — wire to a real generator (pdfkit, puppeteer, or n8n) when deploying.
-// Kept dependency-free so the app boots even without the generator installed.
+const axios = require('axios');
+
+// Delegates certificate rendering to a configured, authenticated document service.
+// The service must persist the PDF and return JSON with an HTTPS `url` field.
 async function renderImpactPdf({ listing, impact }) {
-  // In production, generate a PDF and upload to R2/S3, then return the public URL.
-  // For now, return a deterministic placeholder URL derived from the listing id.
-  const id = String(listing?._id || listing?.id || Date.now());
-  return { url: `${process.env.PUBLIC_ASSET_BASE || ''}/certificates/${id}.pdf`, format: 'placeholder' };
+  const endpoint = process.env.CERTIFICATE_SERVICE_URL;
+  const token = process.env.CERTIFICATE_SERVICE_TOKEN;
+  if (!endpoint || !token) throw new Error('Impact certificate generation is not configured');
+  const { data } = await axios.post(endpoint, {
+    listingId: String(listing?._id || listing?.id),
+    impact,
+    donorId: listing?.donor?._id ? String(listing.donor._id) : undefined,
+  }, { headers: { Authorization: `Bearer ${token}` }, timeout: 15000 });
+  if (!data?.url || typeof data.url !== 'string' || !data.url.startsWith('https://')) throw new Error('Certificate service returned an invalid URL');
+  return { url: data.url, format: 'pdf' };
 }
 
 module.exports = { renderImpactPdf };

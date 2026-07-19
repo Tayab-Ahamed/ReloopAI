@@ -3,6 +3,7 @@ const axios = require('axios');
 
 async function generateListing({ vision, ocr }) {
   const provider = (process.env.AI_PROVIDER || 'mock').toLowerCase();
+  if (provider === 'mock' && process.env.NODE_ENV === 'production') throw new Error('A production AI provider must be configured');
   if (provider === 'groq' && process.env.GROQ_API_KEY) return llmGroq({ vision, ocr });
   if (provider === 'openai' && process.env.OPENAI_API_KEY) return llmOpenAI({ vision, ocr });
   return llmMock({ vision, ocr });
@@ -10,6 +11,7 @@ async function generateListing({ vision, ocr }) {
 
 async function generateImpactReport({ listing }) {
   const provider = (process.env.AI_PROVIDER || 'mock').toLowerCase();
+  if (provider === 'mock' && process.env.NODE_ENV === 'production') throw new Error('A production AI provider must be configured');
   if (provider === 'groq' && process.env.GROQ_API_KEY) return impactGroq({ listing });
   if (provider === 'openai' && process.env.OPENAI_API_KEY) return impactOpenAI({ listing });
   return impactMock({ listing });
@@ -132,6 +134,7 @@ function safeJson(s) { try { return JSON.parse(s); } catch { return {}; } }
 
 async function askReLoop({ message }) {
   const provider = (process.env.AI_PROVIDER || 'mock').toLowerCase();
+  if (provider === 'mock' && process.env.NODE_ENV === 'production') throw new Error('A production AI provider must be configured');
   if (provider === 'groq' && process.env.GROQ_API_KEY) return chatGroq({ message });
   if (provider === 'openai' && process.env.OPENAI_API_KEY) return chatOpenAI({ message });
   return chatMock({ message });

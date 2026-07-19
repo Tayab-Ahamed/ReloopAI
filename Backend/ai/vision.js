@@ -5,6 +5,9 @@ const axios = require('axios');
 
 async function analyzeImage({ imageUrl, hints = {} }) {
   const provider = (process.env.AI_PROVIDER || 'mock').toLowerCase();
+  if (provider === 'mock' && process.env.NODE_ENV === 'production') {
+    throw new Error('A production vision provider must be configured');
+  }
 
   if (provider === 'groq' && process.env.GROQ_API_KEY) {
     return analyzeWithGroq({ imageUrl, hints });

@@ -11,11 +11,12 @@ const NgoManagementDashboard = () => {
   const { enqueueSnackbar } = useSnackbar();
 
   interface Request {
-    _id: number;
+    _id: string;
     name: string;
     email: string;
     createdAt: string;
-    isVerified: string;
+    isVerified: boolean;
+    verificationStatus?: "pending" | "approved" | "rejected";
     registrationNumber: string;
     phone: string;
   }
@@ -35,9 +36,9 @@ const NgoManagementDashboard = () => {
       });
   }, [enqueueSnackbar]);
 
-  const handleApprove = async (id: number) => {
+  const handleApprove = async (id: string) => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_Backend_URL}/api/ngos/approve/${id}`, {
+      const response = await axios.patch(`${import.meta.env.VITE_Backend_URL}/api/ngos/${id}/verification`, { status: "approved" }, {
         withCredentials: true,
       });
 
@@ -57,21 +58,16 @@ const NgoManagementDashboard = () => {
     }
   };
 
-  const handleReject = async (id: number) => {
+  const handleReject = async (id: string) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_Backend_URL}/api/ngos/reject/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-        body: JSON.stringify({ rejectionReason }),
-      });
-
-      const text = await response.text();
-      // Try parse response text as JSON
-      const data = JSON.parse(text);
-
-      if (!response.ok) {
-        throw new Error("Failed to reject NGO");
+      if (!rejectionReason.trim()) {
+        enqueueSnackbar("A rejection reason is required", { variant: "warning" });
+        return;
       }
+      await axios.patch(`${import.meta.env.VITE_Backend_URL}/api/ngos/${id}/verification`, {
+        status: "rejected",
+        rejectionReason: rejectionReason.trim(),
+      }, { withCredentials: true });
 
       setRequests(requests.filter((req) => req._id !== id));
       // Log rejection details if needed: data.rejectionData

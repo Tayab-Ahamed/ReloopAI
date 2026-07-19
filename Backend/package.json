@@ -1,14 +1,14 @@
 {
   "name": "reloop-ai-backend",
   "version": "1.0.0",
-  "description": "ReLoop AI — API for AI-powered circular resource exchange.",
+  "description": "ReLoop AI \u2014 API for AI-powered circular resource exchange.",
   "license": "MIT",
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
-    "test": "echo \"no tests yet\" && exit 0"
+    "test": "node --test"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.750.0",

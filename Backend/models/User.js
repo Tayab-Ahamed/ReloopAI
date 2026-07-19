@@ -51,6 +51,8 @@ const userSchema = new mongoose.Schema({
   whatsappNumber: { type: String },
 
   isVerified: { type: Boolean, default: false },
+  verificationStatus: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending', index: true },
+  verificationReason: { type: String, maxlength: 1000 },
   createdAt:  { type: Date, default: Date.now },
 });
 

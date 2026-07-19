@@ -5,9 +5,7 @@ const  getUser = async (req, res) => {
     try {
       // console.log("Request Received", req.user.email, req.user.id)
 
-      const user = await User.findById(req.user.id);
-
-      console.log(user);
+      const user = await User.findById(req.user.id).select('-password');
       if (!user) return res.status(404).json({ message: "User not found" });
   
       res.status(200).json({
@@ -36,10 +34,8 @@ const  logOut = async (req, res) => {
 }
 
 const userProfileUpdate = async (req, res) => {
-  console.log("Request Body:", req.body);
-
   try {
-    const { _id, name, about, phone, location, profileImage } = req.body;
+    const { name, about, phone, location, profileImage } = req.body;
 
     // Validate required fields
     if (!name || !about || !phone || !location) {
@@ -51,7 +47,7 @@ const userProfileUpdate = async (req, res) => {
 
     // Find the user by ID and update their profile
     const updatedUser = await User.findByIdAndUpdate(
-      _id,
+      req.user.id,
       { 
         name, 
         about, 
@@ -91,22 +87,13 @@ const updateImageProfile = async(req, res) =>{
 const FetchRoleBasedData = async (req, res) => {
   try {
     const { role } = req.query;
-    console.log("query", req.query);
-    console.log("role:", role);
 
-    if(role === 'all'){
-      users = await User.find({ role: { $ne: "Admin" } });  //exclude admin here
-    }
-    else if(role==='donar'){
-      const users = await User.find({role: 'Donar'});
-    }
-    else if(role==='ngo'){
-      const users = await User.find({role: 'NGO'});
-    }
-    else{
-      res.status(400).json({ message: "Invalid role" });
-    }
-    res.json(users);
+    let users;
+    if (role === 'all') users = await User.find({ role: { $ne: "Admin" } }).select('name email role createdAt isVerified verificationStatus');
+    else if (role === 'donor') users = await User.find({ role: { $in: ['Donor', 'Donar'] } }).select('name email role createdAt isVerified');
+    else if (role === 'ngo') users = await User.find({ role: 'NGO' }).select('name email role createdAt isVerified verificationStatus');
+    else return res.status(400).json({ success: false, message: "Invalid role" });
+    return res.json(users);
     
   } catch (error) {
     res.status(500).json({ message: "Server Error", error });

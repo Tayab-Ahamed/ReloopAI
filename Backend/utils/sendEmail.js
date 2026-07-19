@@ -3,9 +3,7 @@ const sgMail = require('@sendgrid/mail');
 
 const sendEmail = async (to, subject, text, html) => {
   if (!process.env.SENDGRID_API_KEY) {
-    console.warn('[reloop] SENDGRID_API_KEY not set — skipping email to', to);
-    console.warn(`[reloop] [MOCK EMAIL] To: ${to} | Subject: ${subject} | Body: ${text}`);
-    return { skipped: true };
+    throw new Error('Email delivery is not configured');
   }
   if (!process.env.SENDGRID_EMAIL && !process.env.EMAIL_FROM) {
     throw new Error('SENDGRID_EMAIL / EMAIL_FROM is not configured');
@@ -28,7 +26,7 @@ const sendEmail = async (to, subject, text, html) => {
     const response = await sgMail.send(msg);
     return { ok: true, status: response[0].statusCode };
   } catch (error) {
-    console.error('[reloop] SendGrid error:', error.message, error.response?.body?.errors);
+    console.error('[reloop] SendGrid delivery failed');
     throw error;
   }
 };

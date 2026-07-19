@@ -1,0 +1,116 @@
+openapi: 3.0.3
+info:
+  title: ReLoop AI API
+  version: 1.0.1
+  description: |
+    Production-readiness security contract for P0.1. The insecure email-only Google login endpoint has been removed.
+servers:
+  - url: https://api.reloop.example
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      required: [success, message]
+      properties:
+        success: { type: boolean, example: false }
+        message: { type: string }
+    NgoVerificationRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [approved, rejected]
+        rejectionReason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+    FAQRequest:
+      type: object
+      required: [question, answer]
+      properties:
+        question: { type: string, minLength: 1, maxLength: 500 }
+        answer: { type: string, minLength: 1, maxLength: 5000 }
+  responses:
+    BadRequest:
+      description: Invalid request
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Unauthorized:
+      description: Authentication required
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Forbidden:
+      description: Administrator permission required
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+paths:
+  /api/auth/login:
+    post:
+      summary: Sign in with email and password
+      responses:
+        '200': { description: Authenticated }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /api/ngos/pending:
+    get:
+      summary: List pending NGO applications
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Pending NGO applications }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/ngos/{id}/verification:
+    patch:
+      summary: Approve or reject a pending NGO application
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NgoVerificationRequest' }
+      responses:
+        '200': { description: Verification updated }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: NGO not found }
+        '409': { description: Application is not pending }
+  /api/faq:
+    get:
+      summary: List public FAQs
+      responses:
+        '200': { description: FAQs }
+    post:
+      summary: Create an FAQ
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FAQRequest' }
+      responses:
+        '201': { description: FAQ created }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/faq/{id}:
+    delete:
+      summary: Delete an FAQ
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: FAQ removed }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: FAQ not found }

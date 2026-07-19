@@ -1,171 +1,137 @@
-    const User = require("../models/User");
-    const sendEmail = require("../utils/sendEmail");
+const mongoose = require('mongoose');
+const User = require('../models/User');
+const AuditLog = require('../models/AuditLog');
+const sendEmail = require('../utils/sendEmail');
 
+const VERIFICATION_STATUSES = new Set(['approved', 'rejected']);
 
-    const getPendingNgos = async (req, res) => {
-        try {
-        const ngos = await User.find({ role: "NGO", isVerified: false });
-        //count pending ngos
-        const PendingNgosCount = ngos.length;
-        res.status(200).json({ngos,PendingNgosCount});
-        } catch (error) {
-        res.status(500).json({ error: "Internal server error" });
-        }
-    };
+const escapeHtml = (value) => String(value)
+  .replaceAll('&', '&amp;')
+  .replaceAll('<', '&lt;')
+  .replaceAll('>', '&gt;')
+  .replaceAll('"', '&quot;')
+  .replaceAll("'", '&#039;');
 
+const ngoResponse = (ngo) => ({
+  _id: ngo._id,
+  name: ngo.name,
+  email: ngo.email,
+  phone: ngo.phone,
+  location: ngo.location,
+  registrationNumber: ngo.registrationNumber,
+  isVerified: ngo.isVerified,
+  verificationStatus: ngo.verificationStatus || (ngo.isVerified ? 'approved' : 'pending'),
+  createdAt: ngo.createdAt,
+});
 
-    const approveNgo = async (req, res) => {
-        try {
-        const { id } = req.params;
-        const ngo = await User.findByIdAndUpdate(id, { isVerified: true }, { new: true });
-    
-        if (!ngo) {
-            return res.status(404).json({ error: "NGO not found" });
-        }
-    
-        const status = ngo.isVerified ? "Approved" : "Pending";
+const getPendingNgos = async (_req, res) => {
+  try {
+    const ngos = await User.find({
+      role: 'NGO',
+      isVerified: false,
+      $or: [
+        { verificationStatus: 'pending' },
+        { verificationStatus: { $exists: false } },
+      ],
+    }).select('name email phone location registrationNumber isVerified verificationStatus createdAt');
 
-        res.status(200).json({ message: "NGO approved successfully", ngo ,status});
-        } catch (error) {
-        res.status(500).json({ error: "Internal server error" });
-        }
-    };
+    return res.status(200).json({
+      ngos: ngos.map(ngoResponse),
+      pendingNgosCount: ngos.length,
+    });
+  } catch (_error) {
+    return res.status(500).json({ success: false, message: 'Unable to load pending NGOs' });
+  }
+};
 
+const getTotalNgos = async (_req, res) => {
+  try {
+    const totalNgos = await User.countDocuments({ role: 'NGO' });
+    return res.status(200).json({ totalNgos });
+  } catch (_error) {
+    return res.status(500).json({ success: false, message: 'Unable to load NGO count' });
+  }
+};
 
-    const getTotalNgos = async (req, res) => {
+const getNgoById = async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(400).json({ success: false, message: 'Invalid NGO identifier' });
+  }
 
-        try {
-            //total ngo count
-           const totalNgos= await User.countDocuments({ role: "NGO" });
-           
-           res.status(200).json({ totalNgos });
-         } catch (error) {
-           console.error("Error fetching total Ngos:", error);
-           res.status(500).json({ message: "Server error" });
-         }
+  try {
+    const ngo = await User.findOne({ _id: req.params.id, role: 'NGO' });
+    if (!ngo) {
+      return res.status(404).json({ success: false, message: 'NGO not found' });
+    }
+    return res.status(200).json(ngoResponse(ngo));
+  } catch (_error) {
+    return res.status(500).json({ success: false, message: 'Unable to load NGO' });
+  }
+};
 
+const updateNgoVerification = async (req, res) => {
+  const { status, rejectionReason } = req.body || {};
 
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(400).json({ success: false, message: 'Invalid NGO identifier' });
+  }
+  if (typeof status !== 'string' || !VERIFICATION_STATUSES.has(status)) {
+    return res.status(400).json({ success: false, message: 'Status must be approved or rejected' });
+  }
+  if (status === 'rejected' && (typeof rejectionReason !== 'string' || !rejectionReason.trim() || rejectionReason.trim().length > 1000)) {
+    return res.status(400).json({ success: false, message: 'A rejection reason between 1 and 1000 characters is required' });
+  }
+
+  try {
+    const ngo = await User.findOne({ _id: req.params.id, role: 'NGO' });
+    if (!ngo) {
+      return res.status(404).json({ success: false, message: 'NGO not found' });
     }
 
+    const currentStatus = ngo.verificationStatus || (ngo.isVerified ? 'approved' : 'pending');
+    if (currentStatus !== 'pending') {
+      return res.status(409).json({ success: false, message: 'Only pending NGO applications can be reviewed' });
+    }
 
-    const getNgoById = async (req, res) => {
-        try {
-        const { id } = req.params;
-        const ngo = await User.findById(id);
-    
-        if (!ngo) {
-            return res.status(404).json({ error: "NGO not found" });
-        }
-    
-        res.status(200).json(ngo);
-        } catch (error) {
-        res.status(500).json({ error: "Internal server error" });
-        }
-    };
+    ngo.isVerified = status === 'approved';
+    ngo.verificationStatus = status;
+    ngo.verificationReason = status === 'rejected' ? rejectionReason.trim() : undefined;
+    await ngo.save();
 
+    await AuditLog.create({
+      actor: req.user.id,
+      action: 'ngo.verification.updated',
+      targetType: 'User',
+      targetId: ngo._id,
+      metadata: { from: currentStatus, to: status, rejectionReason: ngo.verificationReason },
+    });
 
-
-
-    const rejectNgo = async (req, res) => {
-        try {
-            const { id } = req.params;
-            const { rejectionReason } = req.body;  // Get reason from frontend
-            console.log(rejectionReason);
-            const ngo = await User.findById(id);
-            if (!ngo) {
-                return res.status(404).json({ error: "NGO not found" });
-            }
-    
-            // Store rejection reason before deleting
-            const rejectionData = {
-                name: ngo.name,
-                email: ngo.email,
-                rejectionReason,
-            };
-    
-            // Delete the NGO
-            await User.findByIdAndDelete(id);
-
-        // const subject = "Your NGO Application has been Rejected";
-        // const text = `Dear ${ngo.name},\n\nWe regret to inform you that your NGO application has been rejected. Reason: ${rejectionReason}\n\nBest regards,\nThe Team`;
-        // const html = `<p>Dear ${ngo.name},</p><p>We regret to inform you that your NGO application has been rejected. <strong>Reason:</strong> ${rejectionReason}</p><p>Best regards,<br/>The Team</p>`;
-        
-        const subject = "Your NGO Application has been Rejected";
-const text = `
-    Dear ${ngo.name},
-    
-    We regret to inform you that your NGO application has been rejected.
-    
-    Reason: ${rejectionReason}
-    
-    Best regards,
-    The Team
-`;
-
-const html = `
-    <html>
-        <body style="font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 20px;">
-            <table role="presentation" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; padding: 20px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
-                <tr>
-                    <td style="text-align: center; padding-bottom: 20px;">
-                        <img src="https://example.com/logo.png" alt="NGO Logo" style="width: 150px;"/>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="font-size: 18px; color: #333333; text-align: center; padding-bottom: 20px;">
-                        <strong>Dear ${ngo.name},</strong>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="font-size: 16px; color: #555555; line-height: 1.6;">
-                        <p>We regret to inform you that your NGO application has been rejected. The reason for the rejection is as follows:</p>
-                        <p style="font-size: 18px; font-weight: bold; color: #ff4c4c;">"${rejectionReason}"</p>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="font-size: 16px; color: #555555; line-height: 1.6; padding-top: 20px;">
-                        <p>If you have any questions or would like to discuss further, please feel free to contact us.</p>
-                        <p>Best regards,</p>
-                        <p><strong>The NGO Review Team</strong></p>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="text-align: center; padding-top: 20px;">
-                        <a href="https://example.com" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Visit Our Website</a>
-                    </td>
-                </tr>
-            </table>
-        </body>
-    </html>
-`;
-
-
+    if (status === 'rejected') {
+      const safeName = escapeHtml(ngo.name);
+      const safeReason = escapeHtml(ngo.verificationReason);
+      const subject = 'ReLoop AI NGO application update';
+      const text = `Dear ${ngo.name}, your NGO application was not approved. Reason: ${ngo.verificationReason}`;
+      const html = `<p>Dear ${safeName},</p><p>Your NGO application was not approved.</p><p><strong>Reason:</strong> ${safeReason}</p>`;
+      try {
         await sendEmail(ngo.email, subject, text, html);
-            // Send response with rejection details (use this for email)
-            res.status(200).json({ message: "NGO deleted successfully", rejectionData });
-    
-        } catch (error) {
-            res.status(500).json({ error: "Internal server error" });
-        }
+      } catch (_emailError) {
+        // The review decision and audit record are durable even if a downstream email provider is unavailable.
+      }
+    }
 
-    };
+    return res.status(200).json({
+      success: true,
+      message: `NGO application ${status}`,
+      ngo: ngoResponse(ngo),
+    });
+  } catch (_error) {
+    return res.status(500).json({ success: false, message: 'Unable to update NGO verification' });
+  }
+};
 
-
-
-
-
-   
-
-
-
-    module.exports = {
-        getPendingNgos,
-        approveNgo,
-        rejectNgo,
-        getNgoById,
-        getTotalNgos
-    };
-
-
-
-
+module.exports = {
+  getPendingNgos,
+  updateNgoVerification,
+  getNgoById,
+  getTotalNgos,
+};

@@ -16,134 +16,34 @@ require("dotenv").config();
 const getMatchNgos = async (req, res) => {
   try {
     const { donorId } = req.body;
-
-    // Fetch donor details
-    const donor = await Donation.findById(donorId).populate("donor");
-    if (!donor) {
-      console.log(donor);
-      return res.status(404).json({ error: "Donor not found" });
-    }
-
-    // Fetch all NGOs
-    const ngos = await User.find({ role: "NGO" }).select("email location");
-
-    console.log("matching ngo fetch", ngos);
-    // Convert pickup location to lat/lng using Google Geocoding API with mock fallback
-    let donorLat = 19.076;
-    let donorLng = 72.8777;
-    try {
-      if (process.env.GOOGLE_MAPS_API_KEY && process.env.GOOGLE_MAPS_API_KEY !== 'YOUR_KEY') {
-        const geocodeResponse = await axios.get(
-          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-            donor.pickupLocation
-          )}&key=${process.env.GOOGLE_MAPS_API_KEY}`
-        );
-        if (geocodeResponse.data.results && geocodeResponse.data.results.length > 0) {
-          const loc = geocodeResponse.data.results[0].geometry.location;
-          donorLat = loc.lat;
-          donorLng = loc.lng;
-        }
-      }
-    } catch (e) {
-      console.warn("Geocoding failed for donor address, using mock lat/lng:", e.message);
-    }
-
-    // Current date
-    const currentDate = new Date();
-
-    // Calculate dynamic maximum distance
-    const maxDistance = calculateMaxDistance(donor.expirationDate, currentDate) || 50; // Fallback to 50km
-
-    // Match NGOs
-    const matches = await Promise.all(
-      ngos.map(async (ngo) => {
-        // Convert NGO location to lat/lng using Google Geocoding API with mock fallback
-        let ngoLat = 19.08 + (Math.random() - 0.5) * 0.1;
-        let ngoLng = 72.88 + (Math.random() - 0.5) * 0.1;
-        try {
-          if (process.env.GOOGLE_MAPS_API_KEY && process.env.GOOGLE_MAPS_API_KEY !== 'YOUR_KEY') {
-            const ngoGeocodeResponse = await axios.get(
-              `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-                ngo.location
-              )}&key=${process.env.GOOGLE_MAPS_API_KEY}`
-            );
-            if (ngoGeocodeResponse.data.results && ngoGeocodeResponse.data.results.length > 0) {
-              const loc = ngoGeocodeResponse.data.results[0].geometry.location;
-              ngoLat = loc.lat;
-              ngoLng = loc.lng;
-            }
-          }
-        } catch (e) {
-          console.warn("Geocoding failed for NGO address, using mock lat/lng:", e.message);
-        }
-
-        // Calculate distance
-        const distance = calculateDistance(donorLat, donorLng, ngoLat, ngoLng);
-
-        // Calculate estimated travel time (in hours)
-        const averageSpeed = 30; // Average travel speed in km/h
-        const travelTime = distance / averageSpeed;
-
-        // Calculate NGO-specific expiration time
-        const expirationDate = new Date(donor.expirationDate);
-        const ngoExpirationTime = expirationDate - travelTime * 1000 * 60 * 60; // Convert travelTime (hours) to milliseconds
-
-        // Calculate NGO-specific time difference
-        const timeDifference = (ngoExpirationTime - currentDate) / (1000 * 60 * 60); // Convert milliseconds to hours
-
-        // Check if the food/item can reach the NGO before it expires
-        if (timeDifference <= 0) {
-          console.log("Skipping NGO:", ngo.email, "because travel time exceeds expiration time");
-          return null; // Skip this NGO if the item cannot reach in time
-        }
-
-        // Assign weights to distance and expiration time
-        const distanceWeight = 0.6; // Higher weight for distance
-        const expirationWeight = 0.4; // Lower weight for expiration time
-
-        // Normalize distance (lower distance = higher score)
-        const normalizedDistance = Math.max(0, 1 - distance / maxDistance);
-
-        // Normalize expiration time (earlier expiration = higher score)
-        const maxExpirationHours = 168; // Maximum expiration hours for normalization (7 days)
-        const normalizedExpiration = Math.max(0, 1 - timeDifference / maxExpirationHours);
-
-        // Calculate combined score
-        const score =
-          distanceWeight * normalizedDistance + expirationWeight * normalizedExpiration;
-
-        return { ...ngo.toObject(), distance, timeDifference, travelTime, score };
-      })
-    );
-
-    // Filter valid matches within max distance
-    const validMatches = matches.filter(
-      (match) => match !== null && match.distance <= maxDistance
-    );
-
-    // Sort matches by score (highest score first)
-    validMatches.sort((a, b) => b.score - a.score);
-
-    // Log matched NGOs
-    console.log("Matched NGOs:", validMatches);
-
-    // Send emails to matched NGOs with mock fallback for email credentials
-    for (const match of validMatches) {
+    if (!donorId || !process.env.GOOGLE_MAPS_API_KEY) return res.status(503).json({ error: 'Matching service is not configured' });
+    const donor = await Donation.findOne({ _id: donorId, donor: req.user.id }).populate('donor', 'name');
+    if (!donor) return res.status(404).json({ error: 'Donation not found' });
+    const ngos = await User.find({ role: 'NGO', location: { $exists: true, $ne: '' } }).select('_id name location');
+    const geocode = async (address) => {
+      const response = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', { params: { address, key: process.env.GOOGLE_MAPS_API_KEY }, timeout: 8000 });
+      const location = response.data?.results?.[0]?.geometry?.location;
+      if (!location) throw new Error('Address could not be geocoded');
+      return location;
+    };
+    const donorLocation = await geocode(donor.pickupLocation);
+    const now = new Date();
+    const maxDistance = calculateMaxDistance(donor.expirationDate, now);
+    if (!Number.isFinite(maxDistance) || maxDistance <= 0) return res.json({ matches: [] });
+    const matches = (await Promise.all(ngos.map(async (ngo) => {
       try {
-        const { subject, text, html } = generateNGOEmail(donor.donor, donor);
-        await sendEmail(match.email, subject, text, html);
-      } catch (emailError) {
-        console.warn(`[getMatchNgos] Email notification skipped for ${match.email}:`, emailError.message);
-      }
-    }
-
-    res.json({ matches: validMatches });
-  } catch (error) {
-    console.error("Error matching donor with NGOs:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
+        const ngoLocation = await geocode(ngo.location);
+        const distance = calculateDistance(donorLocation.lat, donorLocation.lng, ngoLocation.lat, ngoLocation.lng);
+        const travelTime = distance / 30;
+        const timeDifference = (new Date(donor.expirationDate) - travelTime * 3600000 - now) / 3600000;
+        if (distance > maxDistance || timeDifference <= 0) return null;
+        const score = 0.6 * Math.max(0, 1 - distance / maxDistance) + 0.4 * Math.max(0, 1 - timeDifference / 168);
+        return { id: ngo._id, name: ngo.name, distance, timeDifference, travelTime, score };
+      } catch (_error) { return null; }
+    }))).filter(Boolean).sort((a, b) => b.score - a.score);
+    return res.json({ matches });
+  } catch (_error) { return res.status(502).json({ error: 'Matching service is unavailable' }); }
 };
-
 
 
 const getDonationsUsingStatus = async (req, res) => {
@@ -164,7 +64,7 @@ const getDonationsUsingStatus = async (req, res) => {
         // console.log("donations in backend", donations);
         res.status(200).json(donations);
     } catch (error) {
-        res.status(500).json({ error: "Internal server error", details: error.message });
+        res.status(500).json({ error: "Internal server error", details: 'Request could not be completed' });
       }
 
 }
@@ -298,7 +198,7 @@ const createDonation = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to create donation',
-      error: error.message
+      error: 'Request could not be completed'
     });
   }
 };
@@ -320,7 +220,7 @@ const getMyDonations = async (req, res) => {
     console.error('[getMyDonations] Error:', error);
     res.status(500).json({ 
       error: "Internal server error", 
-      details: error.message,
+      details: 'Request could not be completed',
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
@@ -397,7 +297,7 @@ const getAcceptedDonations = async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: "Error fetching accepted donations",
-      error: error.message 
+      error: 'Request could not be completed' 
     });
   }
 };
@@ -431,7 +331,7 @@ const completeDonation = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error completing donation",
-      error: error.message
+      error: 'Request could not be completed'
     });
   }
 };
@@ -464,7 +364,7 @@ const getMyAcceptedAndDeliveredDonations = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching donations",
-      error: error.message
+      error: 'Request could not be completed'
     });
   }
 };
@@ -481,7 +381,8 @@ const submitFeedback = async (req, res) => {
       donation: donationId
     });
 
-    const donation = await Donation.findById(donationId);
+    const donation = await Donation.findOne({ _id: donationId, receiver: userId, status: 'delivered' });
+    if (!donation) return res.status(403).json({ success: false, message: 'Feedback is allowed only for your delivered donations' });
 
     if (existingFeedback) {
       return res.status(400).json({
@@ -510,7 +411,7 @@ const submitFeedback = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error submitting feedback",
-      error: error.message
+      error: 'Request could not be completed'
     });
   }
 };
@@ -519,10 +420,10 @@ const getFeedbackDetails = async (req, res) => {
   try {
     const { donationId } = req.params;
     
-    // First find the feedback directly
-    const feedback = await Feedback.findOne({
-      donation: donationId
-    }).populate('ngo', 'name');
+    const donation = await Donation.findById(donationId).select('donor receiver');
+    if (!donation) return res.status(404).json({ success: false, message: 'Donation not found' });
+    if (req.user.role !== 'Admin' && String(donation.donor) !== req.user.id && String(donation.receiver) !== req.user.id) return res.status(403).json({ success: false, message: 'You do not have permission to access this feedback' });
+    const feedback = await Feedback.findOne({ donation: donationId }).populate('ngo', 'name');
 
     if (!feedback) {
       return res.status(404).json({
@@ -547,7 +448,7 @@ const getFeedbackDetails = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching feedback",
-      error: error.message
+      error: 'Request could not be completed'
     });
   }
 };
@@ -634,7 +535,7 @@ const generateDeliveryOTP = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error generating OTP",
-      error: error.message
+      error: 'Request could not be completed'
     });
   }
 };
@@ -672,10 +573,10 @@ const verifyDeliveryOTP = async (req, res) => {
       });
     }
 
-    if (otp !== '123456' && otp !== '000000' && donation.otp !== otp) {
+    if (donation.otp !== otp) {
       return res.status(400).json({
         success: false,
-        message: "Invalid OTP (Tip: Use 123456 for testing)"
+        message: "Invalid OTP"
       });
     }
 
@@ -689,7 +590,7 @@ const verifyDeliveryOTP = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error verifying OTP",
-      error: error.message
+      error: 'Request could not be completed'
     });
   }
 };

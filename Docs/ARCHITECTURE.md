@@ -84,3 +84,12 @@ Webhooks are secured with a shared `x-reloop-secret` header.
 - Recipient fields: `acceptedCategories`, `storageCapacity`, `pickupAvailability`, `serviceRadiusKm`
 - Volunteer fields: `volunteerProfile.{ vehicle, maxLoadKg, activeToday }`
 - Channels: `channels.{ email, whatsapp, sms }`, `whatsappNumber`
+
+## P0.1 security boundary
+
+- The backend no longer exposes an email-only Google login endpoint. A production OAuth integration must verify provider-issued credentials before it is introduced.
+- NGO review and FAQ mutations are administrator-only server-side operations. UI route guards are not an authorization boundary.
+- NGO review uses `PATCH /api/ngos/{id}/verification` with an `approved` or `rejected` state. Each review decision produces an immutable audit-log record.
+- Public FAQ reads remain available at `GET /api/faq`; all FAQ writes require an administrator JWT.
+
+See `Docs/OPENAPI.yaml` and `Docs/P0.1-SECURITY-CHANGELOG.md` for the contract and migration guidance.
