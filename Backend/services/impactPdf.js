@@ -5,7 +5,13 @@ const axios = require('axios');
 async function renderImpactPdf({ listing, impact }) {
   const endpoint = process.env.CERTIFICATE_SERVICE_URL;
   const token = process.env.CERTIFICATE_SERVICE_TOKEN;
-  if (!endpoint || !token) throw new Error('Impact certificate generation is not configured');
+  
+  if (!endpoint || !token) {
+    const backendUrl = process.env.BACKEND_URL || 'https://reloop-ai-api.onrender.com';
+    const url = `${backendUrl.replace(/\/$/, '')}/api/certificates/${String(listing?._id || listing?.id)}`;
+    return { url, format: 'svg' };
+  }
+
   const { data } = await axios.post(endpoint, {
     listingId: String(listing?._id || listing?.id),
     impact,
