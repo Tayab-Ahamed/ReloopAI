@@ -30,7 +30,41 @@ app.use(express.urlencoded({ limit: '100kb', extended: false, parameterLimit: 10
 app.get('/api/nearby-places', authMiddleware, rateLimit({ windowMs: 60e3, max: 30, keyPrefix: 'places' }), async (req, res) => {
   const lat = Number(req.query.lat), lng = Number(req.query.lng), radius = Number(req.query.radius || 5000), type = typeof req.query.type === 'string' ? req.query.type : 'food';
   if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180 || !Number.isFinite(radius) || radius < 1 || radius > 50000 || !/^[a-z_]{2,40}$/.test(type)) return res.status(400).json({ success: false, message: 'Place query is invalid' });
-  if (!process.env.GOOGLE_MAPS_API_KEY) return res.status(503).json({ success: false, message: 'Places service is unavailable' });
+  
+  if (!process.env.GOOGLE_MAPS_API_KEY) {
+    try {
+      const User = require('./models/User');
+      const partners = await User.find({
+        role: { $in: ['NGO', 'Recycler'] },
+        'coords.lat': { $exists: true },
+        'coords.lng': { $exists: true }
+      });
+      
+      const haversine = (lat1, lon1, lat2, lon2) => {
+        const R = 6371e3;
+        const phi1 = lat1 * Math.PI/180;
+        const phi2 = lat2 * Math.PI/180;
+        const dPhi = (lat2-lat1) * Math.PI/180;
+        const dLon = (lon2-lon1) * Math.PI/180;
+        const a = Math.sin(dPhi/2) * Math.sin(dPhi/2) +
+                  Math.cos(phi1) * Math.cos(phi2) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+      };
+      
+      const nearby = partners.filter(p => haversine(lat, lng, p.coords.lat, p.coords.lng) <= radius)
+        .map(p => ({
+          name: p.name,
+          vicinity: p.location || 'Nearby circular partner',
+          geometry: { location: p.coords }
+        }));
+      return res.json({ results: nearby, status: 'OK' });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  }
+
   try { const { data } = await axios.get('https://maps.googleapis.com/maps/api/place/nearbysearch/json', { params: { location: `${lat},${lng}`, radius, type, key: process.env.GOOGLE_MAPS_API_KEY }, timeout: 5000 }); return res.json(data); }
   catch (_error) { return res.status(502).json({ success: false, message: 'Places service is unavailable' }); }
 });
