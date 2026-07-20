@@ -8,8 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Upload, Calendar, MapPin, Pizza, ClipboardList, FileText, Camera } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
-import imageCompression from 'browser-image-compression';
 import { useSnackbar } from 'notistack';
+import { getUploadErrorMessage, uploadImage } from '@/utils/imageUpload';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -150,38 +150,12 @@ const DonationForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmationDialog, setShowConfirmationDialog] = useState(false); // State for confirmation dialog
 
-  const compressImage = async (file: File): Promise<File> => {
-    console.log(`Original image size: ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
-    const options = {
-      maxSizeMB: 0.5,
-      maxWidthOrHeight: 1200,
-      useWebWorker: true,
-      initialQuality: 0.7,
-    };
-    try {
-      const compressedFile = await imageCompression(file, options);
-      console.log(`Compressed to: ${(compressedFile.size / (1024 * 1024)).toFixed(2)}MB`);
-      return compressedFile;
-    } catch (error) {
-      console.error('Error compressing image:', error);
-      throw error;
-    }
-  };
-
   const analyzeUploadedImage = async (imageFile: File) => {
     setIsAnalyzing(true);
     enqueueSnackbar('ReLoop AI is analyzing your image...', { variant: 'info', autoHideDuration: 4000 });
     
     try {
-      const base64Image = await convertImageToBase64(imageFile);
-      
-      const uploadResponse = await axios.post(
-        `${import.meta.env.VITE_Backend_URL}/api/upload`,
-        { base64Image, folder: 'donations' },
-        { withCredentials: true, timeout: 30000 }
-      );
-      
-      const imageUrl = uploadResponse.data.url;
+      const imageUrl = await uploadImage(imageFile, 'donations');
       
       const analyzeResponse = await axios.post(
         `${import.meta.env.VITE_Backend_URL}/api/ai/analyze`,
@@ -233,32 +207,17 @@ const DonationForm: React.FC = () => {
           enqueueSnackbar('Image size should be less than 5MB', { variant: 'error' });
           return;
         }
-        try {
-          const compressedFile = await compressImage(file);
-          setFormData({ ...formData, [name]: compressedFile });
-          setErrors({ ...errors, [name]: '' });
-          
-          if (isAiAssisted && name === 'donationImage') {
-            analyzeUploadedImage(compressedFile);
-          }
-        } catch (error) {
-          setErrors({ ...errors, donationImage: 'Error processing image. Please try another image.' });
-          enqueueSnackbar('Error processing image. Please try another image.', { variant: 'error' });
+        setFormData({ ...formData, [name]: file });
+        setErrors({ ...errors, [name]: '' });
+
+        if (isAiAssisted && name === 'donationImage') {
+          analyzeUploadedImage(file);
         }
       }
     } else {
       setFormData({ ...formData, [name]: value });
       setErrors({ ...errors, [name]: value ? '' : `This field is required` });
     }
-  };
-
-  const convertImageToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
-    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -283,15 +242,9 @@ const DonationForm: React.FC = () => {
       let imageUrl = '';
       if (formData.donationImage) {
         try {
-          const base64Image = await convertImageToBase64(formData.donationImage);
-          const uploadResponse = await axios.post(
-            `${import.meta.env.VITE_Backend_URL}/api/upload`,
-            { base64Image, folder: 'donations' },
-            { withCredentials: true, timeout: 30000 }
-          );
-          imageUrl = uploadResponse.data.url;
+          imageUrl = await uploadImage(formData.donationImage, 'donations');
         } catch (error) {
-          enqueueSnackbar('Failed to upload image. Please try a smaller image.', { 
+          enqueueSnackbar(getUploadErrorMessage(error), { 
             variant: 'error',
             anchorOrigin: { vertical: 'top', horizontal: 'right' }
           });

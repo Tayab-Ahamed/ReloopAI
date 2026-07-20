@@ -1,5 +1,11 @@
 # Consolidated release hardening notes
 
+## Upload reliability update
+
+- Feedback now supports up to five images per submission.
+- Profile photos are optimized for avatar display.
+- Donation and feedback photos are optimized for detail while reducing upload time.
+
 ## Implemented security controls
 
 - Server-side authorization now protects administrative, donation, AI, and upload actions.

@@ -48,7 +48,7 @@ const AuthContextProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }
   
-
+ 
   const logout = async () => {
     try {
       console.log("Logging Out!!");

@@ -16,6 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { getUploadErrorMessage, MAX_FEEDBACK_IMAGES, uploadImages } from "@/utils/imageUpload";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -149,42 +150,13 @@ const MyDonations: React.FC = () => {
   const handleImageUpload = async (files: File[]) => {
     if (!files || files.length === 0) return [];
     
-    const uploadedUrls: string[] = [];
     setUploadingImages(true);
   
     try {
-      for (const file of files) {
-        const reader = new FileReader();
-        
-        const imageUrl = await new Promise<string>((resolve, reject) => {
-          reader.onload = async (e) => {
-            try {
-              const base64Image = e.target?.result as string;
-              const response = await axios.post(
-                `${import.meta.env.VITE_Backend_URL}/api/upload`,
-                { base64Image, folder: 'feedback' },
-                { withCredentials: true }
-              );
-              
-              if (response.data.success) {
-                resolve(response.data.url);
-              } else {
-                reject(new Error('Upload failed'));
-              }
-            } catch (error) {
-              reject(error);
-            }
-          };
-          reader.onerror = () => reject(new Error('Failed to read file'));
-          reader.readAsDataURL(file);
-        });
-  
-        uploadedUrls.push(imageUrl);
-      }
-      return uploadedUrls;
+      return await uploadImages(files, 'feedback', 2);
     } catch (error) {
       console.error('Error uploading images:', error);
-      enqueueSnackbar('Failed to upload images', { variant: 'error' });
+      enqueueSnackbar(getUploadErrorMessage(error), { variant: 'error' });
       return [];
     } finally {
       setUploadingImages(false);
@@ -330,13 +302,22 @@ const MyDonations: React.FC = () => {
                           onChange={(e) => setComment(e.target.value)}
                         />
                         <div className="space-y-2">
-                          <Label htmlFor="images">Event Images</Label>
+                          <Label htmlFor="images">Event Images (up to {MAX_FEEDBACK_IMAGES})</Label>
                           <Input
                             id="images"
                             type="file"
                             multiple
                             accept="image/*"
-                            onChange={(e) => setSelectedImages(Array.from(e.target.files || []))}
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files || []);
+                              if (files.length > MAX_FEEDBACK_IMAGES) {
+                                enqueueSnackbar(`You can upload up to ${MAX_FEEDBACK_IMAGES} images.`, { variant: 'warning' });
+                                e.target.value = '';
+                                setSelectedImages([]);
+                                return;
+                              }
+                              setSelectedImages(files);
+                            }}
                             className="cursor-pointer"
                           />
                           <p className="text-sm text-gray-500">

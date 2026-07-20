@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/context/AuthContext";
 import { Separator } from "@/components/ui/separator";
 import { enqueueSnackbar } from "notistack";
+import { getUploadErrorMessage, uploadImage } from "@/utils/imageUpload";
 
 
 
@@ -75,24 +76,12 @@ const Profile: React.FC = () => {
     if (!file) return;
   
     try {
-      // Convert file to base64
-      const base64Image = await convertFileToBase64(file);
-  
-      // Send to backend
-      const response = await axios.post(
-        `${import.meta.env.VITE_Backend_URL}/api/upload`,
-        {
-          base64Image,
-          folder: 'profiles'
-        },
-        { withCredentials: true }
-      );
-  
-      if (response.data.success) {
+      const imageUrl = await uploadImage(file, 'profiles');
+      if (imageUrl) {
         // Update user data with new image URL
         const updatedUserData = {
           ...userData,
-          profileImage: response.data.url
+          profileImage: imageUrl
         };
   
         // Update user profile with new image URL
@@ -112,17 +101,8 @@ const Profile: React.FC = () => {
       setIsEditing(false);
     } catch (error) {
       console.error("Image upload failed:", error);
-      enqueueSnackbar("Image upload failed. Please try again.", { variant: "error" });
+      enqueueSnackbar(getUploadErrorMessage(error), { variant: "error" });
     }
-  };
-
-  const convertFileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
   };
 
   return (
