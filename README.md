@@ -418,6 +418,18 @@ See [`Docs/ROADMAP.md`](./Docs/ROADMAP.md) for the full plan, including the **Fa
 - On-device Vision AI for offline volunteer app
 - Public impact leaderboard
 
+##  Contributors
+
+This project was developed as a collaborative team effort.
+
+Core contributors:
+
+- Mohammad Siddiq Saiyed — mohammadsiddiqsaiyed@gmail.com
+- Abdull Baseer Hammad — hammadhk9474@gmail.com
+- Tayab Ahamed — tayabahammed78@gmail.com
+- Syed Nasir — sd.nasirsyed21@gmail.com
+- Syed Usman — syedusman0204@gmail.com
+- Sekh Mahammad Farook — mdfarook712415@gmail.com
 ##  License
 
 MIT — see [`LICENSE`](./LICENSE).
