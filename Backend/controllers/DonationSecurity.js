@@ -37,7 +37,6 @@ async function generateDeliveryOTP(req, res) {
     const donation = await Donation.findOne({ _id: req.params.donationId, donor: req.user.id, status: 'accepted' }).populate('receiver', 'email name');
     if (!donation?.receiver?.email) return res.status(404).json({ success: false, message: 'Donation not found or not authorized' });
     donation.otpHash = hashOtp(otp); donation.otpExpires = new Date(Date.now() + 30 * 60 * 1000); donation.otpAttemptCount = 0; donation.deliveryVerifiedAt = null; await donation.save();
-    console.info('[reloop] Delivery confirmation code generated:', otp);
     await sendEmail(donation.receiver.email, 'ReLoop AI delivery confirmation code', `Your delivery confirmation code is ${otp}. It expires in 30 minutes.`, `<p>Your delivery confirmation code is <strong>${otp}</strong>. It expires in 30 minutes.</p>`);
     return res.status(200).json({ success: true, message: 'Delivery confirmation code sent' });
   } catch (_error) { return res.status(500).json({ success: false, message: 'Unable to generate delivery confirmation code' }); }
