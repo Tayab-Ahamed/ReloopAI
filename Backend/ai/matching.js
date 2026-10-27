@@ -1,5 +1,5 @@
 // AI Matching — score recipients on distance, urgency, storage, category, availability.
-const calculateDistance = require('../utils/calculateDistance');
+const { calculateDistance } = require('../utils/calculateDistance');
 
 const DEFAULT_WEIGHTS = {
   distance:     0.30,
